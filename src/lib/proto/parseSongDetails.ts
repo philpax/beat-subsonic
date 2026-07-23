@@ -235,6 +235,12 @@ export function parseSongDetails(bytes: Uint8Array): ParsedDatabase {
   const songs: ParsedSong[] = []
   const difficulties: ParsedDifficulty[] = []
   const hashBytes = container.songHashes
+  const expectedHashLength = container.songs.length * 20
+  if (hashBytes.length < expectedHashLength) {
+    throw new Error(
+      `songHashes blob too short: ${hashBytes.length} bytes, expected ${expectedHashLength} (${container.songs.length} songs × 20 bytes)`
+    )
+  }
 
   for (let i = 0; i < container.songs.length; i++) {
     const proto = container.songs[i]

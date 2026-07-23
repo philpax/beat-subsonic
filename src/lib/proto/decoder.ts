@@ -28,7 +28,11 @@ export class ProtoReader {
     )
   }
 
-  /** Read a varint (base-128, LEB128). */
+  /**
+   * Read a varint (base-128, LEB128).
+   * NOTE: This truncates to 32 bits via `>>> 0`. Only use for uint32 fields.
+   * For uint64 fields (e.g. the tags bitfield), use readVarint64() instead.
+   */
   readVarint(): number {
     let result = 0
     let shift = 0

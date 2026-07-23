@@ -86,7 +86,7 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
         <FilterSection title="Ranked">
           <label className="flex items-center gap-2 text-xs">
             <Checkbox
-              checked={(filters.rankedStatesAny ?? 0 & RankedStates.ScoresaberRanked) !== 0}
+              checked={((filters.rankedStatesAny ?? 0) & RankedStates.ScoresaberRanked) !== 0}
               onClick={() => {
                 const current = filters.rankedStatesAny ?? 0
                 update({
@@ -98,7 +98,7 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
           </label>
           <label className="flex items-center gap-2 text-xs">
             <Checkbox
-              checked={(filters.rankedStatesAny ?? 0 & RankedStates.BeatleaderRanked) !== 0}
+              checked={((filters.rankedStatesAny ?? 0) & RankedStates.BeatleaderRanked) !== 0}
               onClick={() => {
                 const current = filters.rankedStatesAny ?? 0
                 update({
@@ -110,7 +110,7 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
           </label>
           <label className="flex items-center gap-2 text-xs">
             <Checkbox
-              checked={(filters.rankedStatesAny ?? 0 & RankedStates.ScoresaberQualified) !== 0}
+              checked={((filters.rankedStatesAny ?? 0) & RankedStates.ScoresaberQualified) !== 0}
               onClick={() => {
                 const current = filters.rankedStatesAny ?? 0
                 update({
@@ -122,7 +122,7 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
           </label>
           <label className="flex items-center gap-2 text-xs">
             <Checkbox
-              checked={(filters.rankedStatesAny ?? 0 & RankedStates.BeatleaderQualified) !== 0}
+              checked={((filters.rankedStatesAny ?? 0) & RankedStates.BeatleaderQualified) !== 0}
               onClick={() => {
                 const current = filters.rankedStatesAny ?? 0
                 update({
@@ -138,7 +138,7 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
         <FilterSection title="Upload Flags">
           <label className="flex items-center gap-2 text-xs">
             <Checkbox
-              checked={(filters.uploadFlags ?? 0 & UploadFlags.Curated) !== 0}
+              checked={((filters.uploadFlags ?? 0) & UploadFlags.Curated) !== 0}
               onClick={() => {
                 const current = filters.uploadFlags ?? 0
                 update({ uploadFlags: current ^ UploadFlags.Curated })
@@ -148,7 +148,7 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
           </label>
           <label className="flex items-center gap-2 text-xs">
             <Checkbox
-              checked={(filters.uploadFlags ?? 0 & UploadFlags.VerifiedUploader) !== 0}
+              checked={((filters.uploadFlags ?? 0) & UploadFlags.VerifiedUploader) !== 0}
               onClick={() => {
                 const current = filters.uploadFlags ?? 0
                 update({ uploadFlags: current ^ UploadFlags.VerifiedUploader })
@@ -225,7 +225,7 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
             .map(([label, value]) => (
               <label key={label} className="flex items-center gap-2 text-xs">
                 <Checkbox
-                  checked={(filters.mods ?? 0 & (value as number)) !== 0}
+                  checked={((filters.mods ?? 0) & (value as number)) !== 0}
                   onClick={() => {
                     const current = filters.mods ?? 0
                     update({ mods: current ^ (value as number) })

@@ -61,6 +61,13 @@ export class DbClient {
 
       this.worker.onerror = (event) => {
         console.error('[db-client] Worker error:', event)
+        const error = new Error(
+          'Database worker crashed: ' + (event.message ?? 'unknown error')
+        )
+        for (const [, pending] of this.pending) {
+          pending.reject(error)
+        }
+        this.pending.clear()
       }
 
       // Initialize the database

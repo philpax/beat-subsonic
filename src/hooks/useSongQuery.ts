@@ -30,12 +30,16 @@ export function useSongQuery({
   const [error, setError] = useState<string | null>(null)
   const requestId = useRef(0)
 
+  // Track which params are "fast" (fire immediately) vs "debounced"
+  const fastKey = `${sort}:${sortDir}:${page}:${pageSize}`
+  const debouncedKey = `${search}:${JSON.stringify(filters)}`
+
+  // Debounce only search/filter changes
   useEffect(() => {
     const currentId = ++requestId.current
     setIsLoading(true)
     setError(null)
 
-    // Debounce search and filter changes
     const timer = setTimeout(async () => {
       try {
         const client = getDbClient()
@@ -48,7 +52,6 @@ export function useSongQuery({
         }
         const result = await client.querySongs(query)
 
-        // Only update if this is still the latest request
         if (currentId === requestId.current) {
           setData(result)
           setIsLoading(false)
@@ -62,7 +65,8 @@ export function useSongQuery({
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [search, filters, sort, sortDir, page, pageSize])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fastKey, debouncedKey])
 
   return { data, isLoading, error }
 }

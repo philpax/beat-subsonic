@@ -1,13 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef, useState, useCallback } from 'react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -149,88 +141,88 @@ export function SongTable({ tagList }: SongTableProps) {
 
       {/* Table */}
       <div className="flex-1 overflow-auto" ref={tableContainerRef}>
-        <Table>
-          <TableHeader className="sticky top-0 z-10 bg-background">
-            <TableRow>
-              <TableHead className="w-12"></TableHead>
-              <SortHeader label="Key" sortKey="song_name" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} />
-              <SortHeader label="Song" sortKey="song_name" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} />
-              <TableHead>Author</TableHead>
-              <TableHead>Mapper</TableHead>
-              <SortHeader label="BPM" sortKey="bpm" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} />
-              <SortHeader label="Dur" sortKey="duration" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} />
-              <SortHeader label="Rating" sortKey="rating" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} />
-              <TableHead>Ranked</TableHead>
-              <SortHeader label="Upload" sortKey="upload_time" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && songs.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground">
-                  Loading...
-                </TableCell>
-              </TableRow>
-            ) : songs.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground">
-                  No songs found
-                </TableCell>
-              </TableRow>
-            ) : (
-              <>
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                  const song = songs[virtualRow.index]
-                  if (!song) return null
-                  return (
-                    <TableRow
-                      key={song.map_id}
-                      onClick={() => setSelectedSong(song)}
-                      className="cursor-pointer"
-                      style={{ height: `${virtualRow.size}px` }}
-                    >
-                      <TableCell>
-                        <img
-                          src={`https://cdn.beatsaver.com/${song.hash}.jpg`}
-                          alt=""
-                          loading="lazy"
-                          className="h-10 w-10 rounded object-cover"
-                          onError={(e) => {
-                            ;(e.target as HTMLImageElement).style.opacity = '0'
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{song.key}</TableCell>
-                      <TableCell className="max-w-[200px] truncate font-medium">{song.song_name}</TableCell>
-                      <TableCell className="max-w-[120px] truncate text-muted-foreground">{song.song_author}</TableCell>
-                      <TableCell className="max-w-[120px] truncate text-muted-foreground">{song.level_author}</TableCell>
-                      <TableCell>{song.bpm.toFixed(0)}</TableCell>
-                      <TableCell>{formatDuration(song.duration)}</TableCell>
-                      <TableCell>{(song.rating * 100).toFixed(0)}%</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {isRankedSet(song.ranked_states, RankedStates.ScoresaberRanked) && (
-                            <Badge variant="secondary" className="text-xs">SS</Badge>
-                          )}
-                          {isRankedSet(song.ranked_states, RankedStates.BeatleaderRanked) && (
-                            <Badge variant="secondary" className="text-xs">BL</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {new Date(song.upload_time * 1000).toLocaleDateString('en-US', {
-                          year: '2-digit',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </>
-            )}
-          </TableBody>
-        </Table>
+        <div className="relative">
+          {/* Header */}
+          <div className="sticky top-0 z-10 flex border-b bg-background">
+            <div className="w-12 shrink-0 px-2 py-2"></div>
+            <div className="w-16 shrink-0 px-2 py-2 text-xs font-medium text-muted-foreground">Key</div>
+            <SortHeader label="Song" sortKey="song_name" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="flex-1" />
+            <div className="w-28 shrink-0 truncate px-2 py-2 text-xs font-medium text-muted-foreground">Author</div>
+            <div className="w-28 shrink-0 truncate px-2 py-2 text-xs font-medium text-muted-foreground">Mapper</div>
+            <SortHeader label="BPM" sortKey="bpm" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-12 shrink-0" />
+            <SortHeader label="Dur" sortKey="duration" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-12 shrink-0" />
+            <SortHeader label="Rating" sortKey="rating" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-14 shrink-0" />
+            <div className="w-16 shrink-0 px-2 py-2 text-xs font-medium text-muted-foreground">Ranked</div>
+            <SortHeader label="Upload" sortKey="upload_time" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-24 shrink-0" />
+          </div>
+
+          {/* Virtual rows */}
+          {isLoading && songs.length === 0 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>
+          ) : songs.length === 0 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">No songs found</div>
+          ) : (
+            <div
+              style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const song = songs[virtualRow.index]
+                if (!song) return null
+                return (
+                  <div
+                    key={song.map_id}
+                    onClick={() => setSelectedSong(song)}
+                    className="flex cursor-pointer items-center border-b transition-colors hover:bg-muted/50"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <div className="w-12 shrink-0 px-2 py-1">
+                      <img
+                        src={`https://cdn.beatsaver.com/${song.hash}.jpg`}
+                        alt=""
+                        loading="lazy"
+                        className="h-10 w-10 rounded object-cover"
+                        onError={(e) => {
+                          ;(e.target as HTMLImageElement).style.opacity = '0'
+                        }}
+                      />
+                    </div>
+                    <div className="w-16 shrink-0 px-2 font-mono text-xs">{song.key}</div>
+                    <div className="flex-1 truncate px-2 text-sm font-medium">{song.song_name}</div>
+                    <div className="w-28 shrink-0 truncate px-2 text-xs text-muted-foreground">{song.song_author}</div>
+                    <div className="w-28 shrink-0 truncate px-2 text-xs text-muted-foreground">{song.level_author}</div>
+                    <div className="w-12 shrink-0 px-2 text-sm">{song.bpm.toFixed(0)}</div>
+                    <div className="w-12 shrink-0 px-2 text-sm">{formatDuration(song.duration)}</div>
+                    <div className="w-14 shrink-0 px-2 text-sm">{(song.rating * 100).toFixed(0)}%</div>
+                    <div className="w-16 shrink-0 px-2">
+                      <div className="flex gap-1">
+                        {isRankedSet(song.ranked_states, RankedStates.ScoresaberRanked) && (
+                          <Badge variant="secondary" className="text-xs">SS</Badge>
+                        )}
+                        {isRankedSet(song.ranked_states, RankedStates.BeatleaderRanked) && (
+                          <Badge variant="secondary" className="text-xs">BL</Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="w-24 shrink-0 px-2 text-xs text-muted-foreground">
+                      {new Date(song.upload_time * 1000).toLocaleDateString('en-US', {
+                        year: '2-digit',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Pagination */}
@@ -296,15 +288,16 @@ interface SortHeaderProps {
   currentSort: SortKey
   sortDir: 'asc' | 'desc'
   onClick: (key: SortKey) => void
+  className?: string
 }
 
-function SortHeader({ label, sortKey, currentSort, sortDir, onClick }: SortHeaderProps) {
+function SortHeader({ label, sortKey, currentSort, sortDir, onClick, className }: SortHeaderProps) {
   const isActive = currentSort === sortKey
   return (
-    <TableHead>
+    <div className={`shrink-0 px-2 py-2 ${className ?? ''}`}>
       <button
         onClick={() => onClick(sortKey)}
-        className={`flex items-center gap-1 hover:text-foreground ${isActive ? 'text-foreground' : ''}`}
+        className={`flex items-center gap-1 text-xs font-medium hover:text-foreground ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}
       >
         {label}
         {isActive &&
@@ -314,6 +307,6 @@ function SortHeader({ label, sortKey, currentSort, sortDir, onClick }: SortHeade
             <ChevronDown className="h-3 w-3" />
           ))}
       </button>
-    </TableHead>
+    </div>
   )
 }

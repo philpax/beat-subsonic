@@ -110,7 +110,6 @@ export const BeatSaverTags = [
   'jump',
   'fitness',
   'balanced',
-  'dance',
 ] as const
 
 /**

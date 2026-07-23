@@ -53,24 +53,25 @@ async function initDb(): Promise<void> {
 async function importData(data: ParsedDatabase): Promise<{ songCount: number; difficultyCount: number }> {
   if (!db) throw new Error('Database not initialized')
 
-  // Clear existing data and re-import
+  // Wrap everything in a single transaction so a crash during import
+  // rolls back the DELETEs too (H2 fix).
+  db.exec('BEGIN TRANSACTION')
+
+  // Clear existing data
   db.exec('DELETE FROM difficulties')
   db.exec('DELETE FROM songs')
   db.exec('DELETE FROM meta')
 
-  // Store scrape metadata
+  // Store scrape metadata — use stepReset for all but the last, then stepFinalize (C1 fix)
   const insertMeta = db.prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)')
   insertMeta.bind(['scrape_ended_time', String(data.scrapeEndedTime)])
-  insertMeta.stepFinalize()
+  insertMeta.stepReset()
 
   // Store tag list as JSON
   insertMeta.bind(['tag_list', JSON.stringify(data.tagList)])
   insertMeta.stepFinalize()
-  insertMeta.finalize()
 
-  // Bulk insert songs in a transaction
-  db.exec('BEGIN TRANSACTION')
-
+  // Bulk insert songs
   const insertSong = db.prepare(`
     INSERT OR REPLACE INTO songs (
       map_id, key, hash, bpm, upvotes, downvotes, rating,

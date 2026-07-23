@@ -49,6 +49,9 @@ export async function fetchSongData(
   }
 
   // Decompress gzip body using native DecompressionStream
+  if (typeof DecompressionStream === 'undefined') {
+    throw new Error('DecompressionStream not supported in this browser')
+  }
   const decompressed = await decompressGzip(response.body, onProgress)
 
   return {
