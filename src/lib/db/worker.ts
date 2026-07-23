@@ -7,10 +7,13 @@
 
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm'
 import { SongDatabase } from './song-database'
+import { SubsonicDatabase } from '../subsonic/db'
 import type { ParsedDatabase } from '../proto/schema'
 import type { SongQuery } from './queries'
+import type { Child } from '../subsonic/types'
 
 const songDb = new SongDatabase()
+const subsonicDb = new SubsonicDatabase()
 
 self.onmessage = async (event: MessageEvent) => {
   const { type, id, payload } = event.data
@@ -23,6 +26,10 @@ self.onmessage = async (event: MessageEvent) => {
         const sqlite3 = await sqlite3InitModule()
         const useOpfs = SongDatabase.isOpfsAvailable(sqlite3)
         songDb.open(sqlite3, useOpfs)
+        // Share the same DB instance for Subsonic tables
+        // Access the internal db via a method — we need to expose it
+        // For now, re-open with the same sqlite3 instance
+        subsonicDb.open(songDb.getDbHandle())
         result = songDb.getFullStats()
         break
       }
@@ -42,6 +49,23 @@ self.onmessage = async (event: MessageEvent) => {
         break
       case 'stats':
         result = songDb.getFullStats()
+        break
+      // Subsonic operations
+      case 'subsonic-import': {
+        const { tracks, fetchedAt } = payload as { tracks: Child[]; fetchedAt: number }
+        subsonicDb.importTracks(tracks, fetchedAt)
+        result = subsonicDb.getStats()
+        break
+      }
+      case 'subsonic-tracks':
+        result = subsonicDb.getAllTracks()
+        break
+      case 'subsonic-stats':
+        result = subsonicDb.getStats()
+        break
+      case 'subsonic-clear':
+        subsonicDb.clear()
+        result = null
         break
       default:
         throw new Error(`Unknown message type: ${type}`)

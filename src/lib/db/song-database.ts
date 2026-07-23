@@ -260,6 +260,11 @@ export class SongDatabase {
     }
   }
 
+  /** Get the underlying SqliteDb instance (for sharing with SubsonicDatabase). */
+  getDbHandle(): SqliteDb {
+    return this.getDb()
+  }
+
   close(): void {
     if (this.db) {
       this.db.close()

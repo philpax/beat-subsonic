@@ -9,4 +9,4 @@ export {
   buildDifficultiesQuery,
 } from './queries'
 export type { SongQuery, SongFilters, SortKey, BuiltQuery } from './queries'
-export { SCHEMA_SQL } from './schema.sql'
+export { SCHEMA_SQL, SCHEMA_SQL_SUBSONIC } from './schema.sql'

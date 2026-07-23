@@ -23,3 +23,10 @@ export {
 } from './auth'
 export { SubsonicClient } from './client'
 export { fetchAllSubsonicData, type SubsonicFetchResult } from './fetcher'
+export {
+  SubsonicDatabase,
+  trackToBindParams,
+  computeNormalizedKey,
+  type SubsonicTrackRow,
+  type SubsonicStats,
+} from './db'

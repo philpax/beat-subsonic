@@ -7,6 +7,8 @@
 
 import type { ParsedDatabase } from '../proto/schema'
 import type { SongQuery } from './queries'
+import type { Child } from '../subsonic/types'
+import type { SubsonicStats, SubsonicTrackRow } from '../subsonic/db'
 
 interface WorkerResponse {
   type: 'result' | 'error'
@@ -96,6 +98,24 @@ export class DbClient {
 
   async getMeta(key: string): Promise<string | null> {
     return (await this.send('meta', { key })) as string | null
+  }
+
+  // ---- Subsonic operations ----
+
+  async subsonicImport(tracks: Child[], fetchedAt: number): Promise<SubsonicStats> {
+    return (await this.send('subsonic-import', { tracks, fetchedAt })) as unknown as SubsonicStats
+  }
+
+  async subsonicGetTracks(): Promise<SubsonicTrackRow[]> {
+    return (await this.send('subsonic-tracks', {})) as unknown as SubsonicTrackRow[]
+  }
+
+  async subsonicGetStats(): Promise<SubsonicStats> {
+    return (await this.send('subsonic-stats', {})) as unknown as SubsonicStats
+  }
+
+  async subsonicClear(): Promise<void> {
+    await this.send('subsonic-clear', {})
   }
 
   private send(type: string, payload: unknown): Promise<unknown> {
