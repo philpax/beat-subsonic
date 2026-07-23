@@ -137,6 +137,7 @@ export function buildMatchIndex(maps: MapKey[]): MatchIndex {
 export function matchTrackToMaps(
   trackVariants: string[],
   index: MatchIndex,
+  maps: MapKey[],
   threshold: number
 ): number[] {
   const matched = new Set<number>()
@@ -148,31 +149,41 @@ export function matchTrackToMaps(
       for (const idx of exact) matched.add(idx)
     }
 
-    // 2. Contains check — scan all variants in the index
-    // For performance, we only check variants that share the first word
+    // 2. Contains check + fuzzy match on maps sharing the same first word
     const firstWord = trackVariant.split(/\s+/)[0]
     if (firstWord) {
       const bucket = index.firstWordBuckets.get(firstWord)
       if (bucket) {
         for (const mapIdx of bucket) {
           if (matched.has(mapIdx)) continue
-          // We need the map's variants to check contains.
-          // Since we don't have them here, we'll do the contains check
-          // in the fuzzy fallback below by checking all variants.
+          const mapVars = maps[mapIdx]?.variants
+          if (!mapVars) continue
+
+          for (const mapVariant of mapVars) {
+            if (
+              trackVariant.includes(mapVariant) ||
+              mapVariant.includes(trackVariant)
+            ) {
+              matched.add(mapIdx)
+              break
+            }
+            if (fuzzyMatch(trackVariant, mapVariant) >= threshold) {
+              matched.add(mapIdx)
+              break
+            }
+          }
         }
       }
     }
 
-    // 3. Fuzzy match — check maps sharing the same first word
-    if (firstWord) {
-      const bucket = index.firstWordBuckets.get(firstWord)
-      if (bucket) {
-        for (const mapIdx of bucket) {
-          if (matched.has(mapIdx)) continue
-          // We need the map's variants for fuzzy matching.
-          // The index doesn't store them, so we need to pass them in.
-          // This is handled by matchAllTracks which has access to the full maps array.
-        }
+    // 3. Scan full variant index for contains matches (handles first-word mismatch)
+    for (const [mapVariant, mapIndices] of index.variantIndex) {
+      if (mapIndices.every((idx) => matched.has(idx))) continue
+      if (
+        trackVariant.includes(mapVariant) ||
+        mapVariant.includes(trackVariant)
+      ) {
+        for (const idx of mapIndices) matched.add(idx)
       }
     }
   }

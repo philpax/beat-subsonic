@@ -8,7 +8,6 @@
 import {
   buildAuthParams,
   buildSubsonicUrl,
-  type AuthParams,
 } from './auth'
 import {
   type Child,

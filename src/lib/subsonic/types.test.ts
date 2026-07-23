@@ -3,8 +3,6 @@ import {
   parseSearch3Response,
   isSubsonicResponseOk,
   getSubsonicError,
-  type SubsonicResponse,
-  type Search3Response,
 } from './types'
 
 describe('parseSearch3Response', () => {

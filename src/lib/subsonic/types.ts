@@ -51,7 +51,6 @@ export interface Child {
   coverArt?: string
   size?: number
   contentType?: string
-  suffix?: string
   transcodedContentType?: string
   transcodedSuffix?: string
   type?: string
@@ -113,7 +112,7 @@ export interface Search3Response {
 /** Parse a raw JSON response into a Search3Response, defaulting empty arrays. */
 export function parseSearch3Response(raw: unknown): Search3Response {
   const wrapper = raw as SubsonicResponse<Search3Response>
-  const body = wrapper['subsonic-response']?.body ?? {}
+  const body = (wrapper['subsonic-response']?.body ?? {}) as Partial<Search3Response>
   return {
     artist: body.artist ?? [],
     album: body.album ?? [],

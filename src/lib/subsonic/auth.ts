@@ -8,7 +8,10 @@
  * `crypto.getRandomValues` is available in both browser and Node (via globalThis.crypto).
  */
 
-import md5 from 'js-md5'
+// js-md5 uses `export =` which doesn't play well with verbatimModuleSyntax.
+// Use a direct require + cast to access the .hex() function.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const md5 = require('js-md5') as { hex(input: string): string }
 
 /** API version matching blackbird-subsonic's API_VERSION constant. */
 export const API_VERSION = '1.16.1'
@@ -42,7 +45,7 @@ export function generateSalt(): string {
  * Uses js-md5 since WebCrypto doesn't support MD5.
  */
 export function computeToken(password: string, salt: string): string {
-  return md5(password + salt)
+  return md5.hex(password + salt)
 }
 
 /** Auth query parameters returned by buildAuthParams. */

@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react'
 import { AppShell } from '@/components/AppShell'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { SongTable } from '@/components/SongTable'
+import { SubsonicView } from '@/components/SubsonicView'
+import { MatchView } from '@/components/MatchView'
+import { TabLayout, useActiveTab } from '@/components/TabLayout'
 import { useDatabase } from '@/hooks/useDatabase'
 
 const THEME_KEY = 'beatsaver-db:theme'
 
 function App() {
   const { state, refresh } = useDatabase()
+  const [activeTab, setActiveTab] = useActiveTab()
   const [isDark, setIsDark] = useState(() => {
     try {
       const stored = localStorage.getItem(THEME_KEY)
@@ -50,7 +54,11 @@ function App() {
       isDark={isDark}
       onToggleTheme={() => setIsDark((d) => !d)}
     >
-      <SongTable tagList={tagList} />
+      <TabLayout activeTab={activeTab} onTabChange={setActiveTab}>
+        {activeTab === 'beatsaver' && <SongTable tagList={tagList} />}
+        {activeTab === 'subsonic' && <SubsonicView />}
+        {activeTab === 'match' && <MatchView />}
+      </TabLayout>
     </AppShell>
   )
 }
