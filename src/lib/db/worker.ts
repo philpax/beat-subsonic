@@ -28,9 +28,9 @@ async function initDb(): Promise<void> {
   // Try OPFS first, fall back to in-memory
   let useOpfs = false
   try {
-    if (sqlite3.oo1.OpfsDatabase) {
+    if (sqlite3.oo1.OpfsDb) {
       // Test if OPFS is actually available
-      const testDb = new sqlite3.oo1.OpfsDatabase(':test-opfs-availability:')
+      const testDb = new sqlite3.oo1.OpfsDb(':test-opfs-availability:')
       testDb.close()
       useOpfs = true
     }
@@ -39,10 +39,10 @@ async function initDb(): Promise<void> {
   }
 
   if (useOpfs) {
-    db = new sqlite3.oo1.OpfsDatabase(DB_FILENAME, 'cw')
+    db = new sqlite3.oo1.OpfsDb(DB_FILENAME, 'cw')
     console.log('[db-worker] Using OPFS-backed SQLite')
   } else {
-    db = new sqlite3.oo1.Database(':memory:')
+    db = new sqlite3.oo1.DB(':memory:')
     console.log('[db-worker] Using in-memory SQLite (OPFS not available)')
   }
 
