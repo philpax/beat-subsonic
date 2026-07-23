@@ -8,8 +8,8 @@
 
 import { DATA_SOURCES } from './sources'
 import type { DataSource } from './sources'
-import { fetchSongData, type FetchResult } from './fetcher'
 import { getStoredEtag, setStoredEtag } from './cache'
+import { fetchSongData } from './fetcher'
 import { parseSongDetails } from '../proto/parseSongDetails'
 import type { ParsedDatabase } from '../proto/schema'
 

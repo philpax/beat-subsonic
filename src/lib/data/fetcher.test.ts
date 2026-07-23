@@ -38,14 +38,7 @@ function createMockResponse(
   return new Response(stream, { status, headers })
 }
 
-// Mock DecompressionStream to just pass through (no actual gzip in tests)
-vi.stubGlobal('DecompressionStream', class MockDecompressionStream {
-  constructor() {}
-  readable: ReadableStream
-  writable: WritableStream
-})
-
-// We need a proper mock - let's create a TransformStream that passes through
+// Mock DecompressionStream with a pass-through TransformStream
 class MockDecompressionStream extends TransformStream<Uint8Array, Uint8Array> {
   constructor() {
     super()

@@ -71,7 +71,7 @@ async function decompressGzip(
   }
 
   const decompressionStream = new DecompressionStream('gzip')
-  const decompressed = body.pipeThrough(decompressionStream)
+  const decompressed = body.pipeThrough(decompressionStream as any)
 
   // Collect chunks
   const reader = decompressed.getReader()
@@ -86,9 +86,10 @@ async function decompressGzip(
     const { done, value } = await reader.read()
     if (done) break
     if (value) {
-      chunks.push(value)
-      totalLength += value.length
-      loaded += value.length
+      const chunk = value as Uint8Array
+      chunks.push(chunk)
+      totalLength += chunk.length
+      loaded += chunk.length
       if (onProgress) {
         onProgress(loaded, null)
       }
