@@ -1,0 +1,29 @@
+export {
+  foldLookalikes,
+  foldDiacritics,
+  normalizeVariants,
+  normalizeForMatching,
+  stripAlbumParentheses,
+  stripSuperfluousWords,
+} from './normalize'
+export {
+  jaroSimilarity,
+  winklerSimilarity,
+  wordBasedSimilarity,
+  tokenSetSimilarity,
+  fuzzyMatch,
+} from './fuzzy'
+export {
+  buildMapKey,
+  buildTrackKey,
+  buildMatchIndex,
+  matchTrackToMaps,
+  matchAllTracks,
+  computeMatchScore,
+} from './matcher'
+export type {
+  MapKey,
+  TrackKey,
+  MatchIndex,
+  MatchResult,
+} from './matcher'
