@@ -21,6 +21,7 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import { useSongQuery } from '@/hooks/useSongQuery'
+import { usePersistentState } from '@/hooks/usePersistentState'
 import { FilterPanel } from '@/components/FilterPanel'
 import { SortControl } from '@/components/SortControl'
 import { SongDetailDialog } from '@/components/SongDetailDialog'
@@ -47,12 +48,12 @@ export function SongTable({ tagList }: SongTableProps) {
   const [showFilters, setShowFilters] = useState(false)
 
   // Sort state
-  const [sort, setSort] = useState<SortKey>('upload_time')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const [sort, setSort] = usePersistentState<SortKey>('sort', 'upload_time')
+  const [sortDir, setSortDir] = usePersistentState<'asc' | 'desc'>('sortDir', 'desc')
 
   // Pagination state
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(PAGE_SIZE_DEFAULT)
+  const [pageSize, setPageSize] = usePersistentState<number>('pageSize', PAGE_SIZE_DEFAULT)
 
   // Selected song for detail dialog
   const [selectedSong, setSelectedSong] = useState<SongRow | null>(null)
