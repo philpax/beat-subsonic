@@ -10,12 +10,14 @@ import {
   SlidersHorizontal,
   ChevronUp,
   ChevronDown,
+  Zap,
 } from 'lucide-react'
 import { useSongQuery } from '@/hooks/useSongQuery'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { FilterPanel } from '@/components/FilterPanel'
 import { SortControl } from '@/components/SortControl'
 import { SongDetailDialog } from '@/components/SongDetailDialog'
+import { buildOneClickUrl } from '@/lib/types'
 import type { SongFilters, SortKey } from '@/lib/db/queries'
 import {
   RankedStates,
@@ -152,6 +154,7 @@ export function SongTable({ tagList }: SongTableProps) {
             <SortHeader label="Rating" sortKey="rating" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-14 shrink-0" />
             <SortHeader label="Ranked" sortKey="ranked_states" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-14 shrink-0" />
             <SortHeader label="Uploaded" sortKey="upload_time" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-24 shrink-0" />
+            <div className="w-20 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Install</div>
           </div>
 
           {/* Virtual rows */}
@@ -215,6 +218,18 @@ export function SongTable({ tagList }: SongTableProps) {
                         month: 'short',
                         day: 'numeric',
                       })}
+                    </div>
+                    <div className="w-20 shrink-0 px-2" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => {
+                          window.location.href = buildOneClickUrl(song.key)
+                        }}
+                        className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+                        title="OneClick install (requires ModAssistant)"
+                      >
+                        <Zap className="h-3 w-3" />
+                        OneClick
+                      </button>
                     </div>
                   </div>
                 )
