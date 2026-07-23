@@ -98,7 +98,7 @@ export function SongTable({ tagList }: SongTableProps) {
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search songs, mappers, keys…"
+            placeholder="Search songs, authors, mappers…"
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="h-8 pl-8 text-sm"
@@ -144,14 +144,13 @@ export function SongTable({ tagList }: SongTableProps) {
           {/* Header */}
           <div className="sticky top-0 z-10 flex border-b bg-background">
             <div className="w-10 shrink-0" />
-            <div className="w-14 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Key</div>
             <SortHeader label="Song" sortKey="song_name" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="flex-1" />
-            <div className="w-24 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Author</div>
-            <div className="w-24 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Mapper</div>
+            <SortHeader label="Author" sortKey="song_author" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-36 shrink-0" />
+            <SortHeader label="Mapper" sortKey="level_author" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-36 shrink-0" />
             <SortHeader label="BPM" sortKey="bpm" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-12 shrink-0" />
             <SortHeader label="Dur" sortKey="duration" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-12 shrink-0" />
             <SortHeader label="Rating" sortKey="rating" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-14 shrink-0" />
-            <div className="w-14 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Ranked</div>
+            <SortHeader label="Ranked" sortKey="ranked_states" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-14 shrink-0" />
             <SortHeader label="Uploaded" sortKey="upload_time" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-24 shrink-0" />
           </div>
 
@@ -194,10 +193,9 @@ export function SongTable({ tagList }: SongTableProps) {
                         }}
                       />
                     </div>
-                    <div className="w-14 shrink-0 px-2 font-mono text-xs text-muted-foreground">{song.key}</div>
                     <div className="flex-1 truncate px-2 text-sm font-medium">{song.song_name}</div>
-                    <div className="w-24 shrink-0 truncate px-2 text-xs text-muted-foreground">{song.song_author}</div>
-                    <div className="w-24 shrink-0 truncate px-2 text-xs text-muted-foreground">{song.level_author}</div>
+                    <div className="w-36 shrink-0 truncate px-2 text-xs text-muted-foreground">{song.song_author}</div>
+                    <div className="w-36 shrink-0 truncate px-2 text-xs text-muted-foreground">{song.level_author}</div>
                     <div className="w-12 shrink-0 px-2 font-mono text-sm">{song.bpm.toFixed(0)}</div>
                     <div className="w-12 shrink-0 px-2 font-mono text-sm text-muted-foreground">{formatDuration(song.duration)}</div>
                     <div className="w-14 shrink-0 px-2 font-mono text-sm">{(song.rating * 100).toFixed(0)}%</div>

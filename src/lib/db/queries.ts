@@ -31,9 +31,12 @@ export type SortKey =
   | 'rating'
   | 'bpm'
   | 'song_name'
+  | 'song_author'
+  | 'level_author'
   | 'duration'
   | 'upvotes'
   | 'stars'
+  | 'ranked_states'
 
 export interface SongQuery {
   filters?: SongFilters
@@ -206,13 +209,18 @@ function getSortColumn(sortKey: SortKey, filters: SongFilters): string {
       return 'bpm'
     case 'song_name':
       return 'song_name COLLATE NOCASE'
+    case 'song_author':
+      return 'song_author COLLATE NOCASE'
+    case 'level_author':
+      return 'level_author COLLATE NOCASE'
     case 'duration':
       return 'duration'
     case 'upvotes':
       return 'upvotes'
+    case 'ranked_states':
+      return 'ranked_states'
     case 'stars': {
       const starCol = filters.starsSource === 'bl' ? 'stars_bl' : 'stars_ss'
-      // Subquery to get max stars for sorting
       return `(SELECT MAX(${starCol}) FROM difficulties d WHERE d.song_map_id = songs.map_id)`
     }
     default:

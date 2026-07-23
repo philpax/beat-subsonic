@@ -13,10 +13,13 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'upload_time', label: 'Upload Date' },
   { value: 'rating', label: 'Rating' },
   { value: 'bpm', label: 'BPM' },
-  { value: 'song_name', label: 'Name' },
+  { value: 'song_name', label: 'Song Name' },
+  { value: 'song_author', label: 'Song Author' },
+  { value: 'level_author', label: 'Mapper' },
   { value: 'duration', label: 'Duration' },
   { value: 'upvotes', label: 'Upvotes' },
   { value: 'stars', label: 'Star Rating' },
+  { value: 'ranked_states', label: 'Ranked' },
 ]
 
 export function SortControl({

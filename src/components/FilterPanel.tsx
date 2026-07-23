@@ -168,7 +168,7 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
               onChange={(e) =>
                 update({ bpmMin: e.target.value ? Number(e.target.value) : undefined })
               }
-              className="h-7 w-16 text-xs"
+              className="h-7 w-20 text-xs"
             />
             <span className="text-xs">—</span>
             <Input
@@ -178,7 +178,7 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
               onChange={(e) =>
                 update({ bpmMax: e.target.value ? Number(e.target.value) : undefined })
               }
-              className="h-7 w-16 text-xs"
+              className="h-7 w-20 text-xs"
             />
           </div>
         </FilterSection>
@@ -188,7 +188,7 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
           <Select
             value={filters.starsSource ?? 'ss'}
             onChange={(e) => update({ starsSource: e.target.value as 'ss' | 'bl' })}
-            className="h-7 w-16 text-xs"
+            className="h-7 w-20 text-xs"
           >
             <option value="ss">SS</option>
             <option value="bl">BL</option>
@@ -202,7 +202,7 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
               onChange={(e) =>
                 update({ starsMin: e.target.value ? Number(e.target.value) : undefined })
               }
-              className="h-7 w-16 text-xs"
+              className="h-7 w-20 text-xs"
             />
             <span className="text-xs">—</span>
             <Input
@@ -213,7 +213,7 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
               onChange={(e) =>
                 update({ starsMax: e.target.value ? Number(e.target.value) : undefined })
               }
-              className="h-7 w-16 text-xs"
+              className="h-7 w-20 text-xs"
             />
           </div>
         </FilterSection>
