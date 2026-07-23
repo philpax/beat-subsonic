@@ -23,6 +23,7 @@ import {
 import { useSongQuery } from '@/hooks/useSongQuery'
 import { FilterPanel } from '@/components/FilterPanel'
 import { SortControl } from '@/components/SortControl'
+import { SongDetailDialog } from '@/components/SongDetailDialog'
 import type { SongFilters, SortKey } from '@/lib/db/queries'
 import {
   RankedStates,
@@ -53,9 +54,8 @@ export function SongTable({ tagList }: SongTableProps) {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE_DEFAULT)
 
-  // Selected song for detail dialog (used in Phase 6)
+  // Selected song for detail dialog
   const [selectedSong, setSelectedSong] = useState<SongRow | null>(null)
-  void selectedSong
 
   // Debounce search
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -272,6 +272,13 @@ export function SongTable({ tagList }: SongTableProps) {
           </Button>
         </div>
       </div>
+
+      {/* Song detail dialog */}
+      <SongDetailDialog
+        song={selectedSong}
+        tagList={tagList}
+        onClose={() => setSelectedSong(null)}
+      />
     </div>
   )
 }
