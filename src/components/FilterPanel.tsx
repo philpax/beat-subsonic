@@ -35,12 +35,12 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
   }
 
   return (
-    <div className="border-b bg-muted/30 p-4">
+    <div className="border-b bg-muted/20 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-medium">Filters</h3>
-        <Button variant="ghost" size="sm" onClick={reset} className="gap-1 text-xs">
+        <h3 className="font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Filters</h3>
+        <Button variant="ghost" size="sm" onClick={reset} className="h-6 gap-1 text-[10px] text-muted-foreground">
           <X className="h-3 w-3" />
-          Clear all
+          Clear
         </Button>
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
@@ -264,7 +264,7 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
-      <h4 className="text-xs font-medium text-muted-foreground">{title}</h4>
+      <h4 className="font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{title}</h4>
       <div className="space-y-1">{children}</div>
     </div>
   )

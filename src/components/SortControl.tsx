@@ -30,7 +30,7 @@ export function SortControl({
       <Select
         value={sort}
         onChange={(e) => onSortChange(e.target.value as SortKey)}
-        className="h-8 w-32"
+        className="h-8 w-28 text-xs"
       >
         {SORT_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -40,7 +40,7 @@ export function SortControl({
       </Select>
       <button
         onClick={() => onSortDirChange(sortDir === 'asc' ? 'desc' : 'asc')}
-        className="flex h-8 w-8 items-center justify-center rounded-md border hover:bg-accent"
+        className="flex h-8 w-7 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
         title={sortDir === 'asc' ? 'Ascending' : 'Descending'}
       >
         {sortDir === 'asc' ? (

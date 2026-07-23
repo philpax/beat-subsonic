@@ -1,6 +1,5 @@
 import type { DatabaseStatus } from '@/hooks/useDatabase'
 import type { DataLoadProgress } from '@/lib/data'
-import { Loader2, Download, Database, AlertCircle } from 'lucide-react'
 
 interface LoadingScreenProps {
   status: DatabaseStatus
@@ -8,47 +7,67 @@ interface LoadingScreenProps {
   progress: DataLoadProgress | null
 }
 
-export function LoadingScreen({ status, error, progress }: LoadingScreenProps) {
-  const stageLabels: Record<string, string> = {
-    idle: 'Initializing...',
-    fetching: `Downloading data${progress?.sourceId ? ` from ${progress.sourceId}` : ''}...`,
-    parsing: 'Parsing protobuf data...',
-    importing: 'Importing into database...',
-    ready: 'Ready',
-    error: 'Error',
-  }
+const STAGE_LABELS: Record<string, string> = {
+  idle: 'Initializing',
+  fetching: 'Downloading',
+  parsing: 'Parsing',
+  importing: 'Indexing',
+  ready: 'Ready',
+  error: 'Error',
+}
 
+export function LoadingScreen({ status, error, progress }: LoadingScreenProps) {
   const bytesLoaded = progress?.bytesLoaded ?? 0
   const mbLoaded = (bytesLoaded / 1024 / 1024).toFixed(1)
+  const stageLabel = STAGE_LABELS[status] ?? 'Loading'
+
+  if (status === 'error') {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
+        <div className="w-full max-w-sm space-y-4">
+          <div className="h-1 w-full rounded-full bg-destructive" />
+          <h1 className="text-lg font-semibold tracking-tight">Couldn't load data</h1>
+          <p className="text-sm text-muted-foreground">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-sm text-primary hover:underline"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4 px-4 text-center">
-        {status === 'error' ? (
-          <>
-            <AlertCircle className="h-12 w-12 text-destructive" />
-            <h1 className="text-xl font-semibold">Failed to load data</h1>
-            <p className="max-w-md text-sm text-muted-foreground">{error}</p>
-          </>
-        ) : (
-          <>
-            <Database className="h-12 w-12 text-primary" />
-            <h1 className="text-xl font-semibold">BeatSaver Map Database</h1>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>{stageLabels[status] ?? 'Loading...'}</span>
-            </div>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
+      <div className="w-full max-w-sm space-y-6">
+        {/* Wordmark */}
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">
+            BeatSubsonic
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            BeatSaver map database
+          </p>
+        </div>
+
+        {/* Saber ignition bar */}
+        <div className="space-y-2">
+          <div className="h-px w-full overflow-hidden bg-border">
+            <div className="saber-bar saber-gradient h-full" />
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-mono text-muted-foreground">{stageLabel}</span>
             {bytesLoaded > 0 && status === 'fetching' && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Download className="h-3 w-3" />
-                <span>{mbLoaded} MB downloaded</span>
-              </div>
+              <span className="font-mono text-muted-foreground">{mbLoaded} MB</span>
             )}
-            <div className="text-xs text-muted-foreground">
-              First load downloads ~50MB and may take a moment.
-            </div>
-          </>
-        )}
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          First load downloads ~13 MB of map data.
+        </p>
       </div>
     </div>
   )

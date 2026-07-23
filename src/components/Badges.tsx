@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge'
 import {
   RankedStates,
   UploadFlags,
@@ -14,54 +13,54 @@ import {
 export function RankedBadge({ rankedStates }: { rankedStates: number }) {
   const badges: React.ReactNode[] = []
   if (isRankedSet(rankedStates, RankedStates.ScoresaberRanked))
-    badges.push(<Badge key="ss" variant="default" className="text-xs">SS Ranked</Badge>)
+    badges.push(<span key="ss" className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary">SS RANKED</span>)
   if (isRankedSet(rankedStates, RankedStates.BeatleaderRanked))
-    badges.push(<Badge key="bl" variant="secondary" className="text-xs">BL Ranked</Badge>)
+    badges.push(<span key="bl" className="rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">BL RANKED</span>)
   if (isRankedSet(rankedStates, RankedStates.ScoresaberQualified))
-    badges.push(<Badge key="ssq" variant="outline" className="text-xs">SS Qualified</Badge>)
+    badges.push(<span key="ssq" className="rounded border border-primary/30 px-1.5 py-0.5 text-[10px] font-medium text-primary">SS QUALIFIED</span>)
   if (isRankedSet(rankedStates, RankedStates.BeatleaderQualified))
-    badges.push(<Badge key="blq" variant="outline" className="text-xs">BL Qualified</Badge>)
+    badges.push(<span key="blq" className="rounded border border-accent/30 px-1.5 py-0.5 text-[10px] font-medium text-accent">BL QUALIFIED</span>)
   return <div className="flex flex-wrap gap-1">{badges}</div>
 }
 
 export function UploadFlagBadge({ uploadFlags }: { uploadFlags: number }) {
   const badges: React.ReactNode[] = []
   if (isUploadFlagSet(uploadFlags, UploadFlags.Curated))
-    badges.push(<Badge key="curated" variant="default" className="text-xs">Curated</Badge>)
+    badges.push(<span key="curated" className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary">CURATED</span>)
   if (isUploadFlagSet(uploadFlags, UploadFlags.VerifiedUploader))
-    badges.push(<Badge key="verified" variant="secondary" className="text-xs">Verified</Badge>)
+    badges.push(<span key="verified" className="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground">VERIFIED</span>)
   return <div className="flex flex-wrap gap-1">{badges}</div>
 }
 
 export function CharacteristicBadge({ characteristic }: { characteristic: number }) {
-  return <Badge variant="outline" className="text-xs">{characteristicLabel(characteristic)}</Badge>
+  return <span className="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">{characteristicLabel(characteristic)}</span>
 }
 
 export function DifficultyBadge({ difficulty }: { difficulty: number }) {
   const colors: Record<number, string> = {
-    0: 'bg-green-500/20 text-green-700 dark:text-green-400',
-    1: 'bg-blue-500/20 text-blue-700 dark:text-blue-400',
-    2: 'bg-purple-500/20 text-purple-700 dark:text-purple-400',
-    3: 'bg-pink-500/20 text-pink-700 dark:text-pink-400',
-    4: 'bg-red-500/20 text-red-700 dark:text-red-400',
+    0: 'text-green-400',
+    1: 'text-blue-400',
+    2: 'text-purple-400',
+    3: 'text-pink-400',
+    4: 'text-red-400',
   }
   return (
-    <Badge className={`text-xs ${colors[difficulty] ?? ''}`}>
+    <span className={`text-[10px] font-bold ${colors[difficulty] ?? 'text-muted-foreground'}`}>
       {difficultyLabel(difficulty)}
-    </Badge>
+    </span>
   )
 }
 
 export function ModBadges({ mods }: { mods: number }) {
   const badges: React.ReactNode[] = []
   if (isModSet(mods, MapMods.NoodleExtensions))
-    badges.push(<Badge key="ne" variant="outline" className="text-xs">NE</Badge>)
+    badges.push(<span key="ne" className="rounded border border-border px-1 py-0.5 text-[9px] text-muted-foreground">NE</span>)
   if (isModSet(mods, MapMods.MappingExtensions))
-    badges.push(<Badge key="me" variant="outline" className="text-xs">ME</Badge>)
+    badges.push(<span key="me" className="rounded border border-border px-1 py-0.5 text-[9px] text-muted-foreground">ME</span>)
   if (isModSet(mods, MapMods.Chroma))
-    badges.push(<Badge key="chroma" variant="outline" className="text-xs">Chroma</Badge>)
+    badges.push(<span key="chroma" className="rounded border border-border px-1 py-0.5 text-[9px] text-muted-foreground">CHROMA</span>)
   if (isModSet(mods, MapMods.Cinema))
-    badges.push(<Badge key="cinema" variant="outline" className="text-xs">Cinema</Badge>)
+    badges.push(<span key="cinema" className="rounded border border-border px-1 py-0.5 text-[9px] text-muted-foreground">CINEMA</span>)
   return <div className="flex flex-wrap gap-1">{badges}</div>
 }
 
@@ -71,7 +70,7 @@ export function TagBadges({ tagsBitfield, tagList }: { tagsBitfield: number; tag
   return (
     <div className="flex flex-wrap gap-1">
       {names.map((name) => (
-        <Badge key={name} variant="secondary" className="text-xs">{name}</Badge>
+        <span key={name} className="rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground">{name}</span>
       ))}
     </div>
   )

@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
-import { DataStatusBadge } from '@/components/DataStatusBadge'
-import { RefreshCw, Music2, Moon, Sun } from 'lucide-react'
+import { RefreshCw, Moon, Sun } from 'lucide-react'
 
 interface AppShellProps {
   children: ReactNode
@@ -20,24 +19,36 @@ export function AppShell({
   isDark,
   onToggleTheme,
 }: AppShellProps) {
+  const scrapeDate = scrapeTime
+    ? new Date(scrapeTime * 1000).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : null
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
-        <div className="flex items-center justify-between gap-4 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Music2 className="h-6 w-6 text-primary" />
-            <h1 className="text-lg font-bold">BeatSaver Map Database</h1>
+      <header className="sticky top-0 z-40 bg-background">
+        <div className="flex items-center justify-between gap-4 px-4 py-2.5">
+          <div className="flex items-baseline gap-3">
+            <h1 className="text-base font-bold tracking-tight">BeatSubsonic</h1>
+            <span className="text-xs text-muted-foreground">
+              {songCount.toLocaleString()} maps
+              {scrapeDate && <span className="ml-1">· updated {scrapeDate}</span>}
+            </span>
           </div>
-          <div className="flex items-center gap-2">
-            <DataStatusBadge scrapeTime={scrapeTime} songCount={songCount} />
-            <Button variant="ghost" size="icon" onClick={onRefresh} title="Refresh data">
-              <RefreshCw className="h-4 w-4" />
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={onRefresh} title="Check for updates" className="h-8 w-8">
+              <RefreshCw className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={onToggleTheme} title="Toggle theme">
-              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            <Button variant="ghost" size="icon" onClick={onToggleTheme} title="Toggle theme" className="h-8 w-8">
+              {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
             </Button>
           </div>
         </div>
+        {/* Saber gradient underline */}
+        <div className="saber-gradient h-px" />
       </header>
       <main className="flex-1 overflow-hidden">{children}</main>
     </div>

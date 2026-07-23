@@ -24,16 +24,16 @@ export function OneClickButton({
   }
 
   const linkClass = cn(
-    'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',
-    size === 'sm' ? 'h-8 rounded-md px-3 text-xs' : 'h-9 px-4 py-2'
+    'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-xs font-medium transition-colors border border-border bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground',
+    size === 'sm' ? 'h-7 px-2.5' : 'h-8 px-3'
   )
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <Tooltip>
         <TooltipTrigger>
           <Button variant={variant} size={size} onClick={handleClick} className="gap-1">
-            <Zap className="h-4 w-4" />
+            <Zap className="h-3.5 w-3.5" />
             OneClick
           </Button>
         </TooltipTrigger>
@@ -48,7 +48,7 @@ export function OneClickButton({
         rel="noopener noreferrer"
         className={linkClass}
       >
-        <ExternalLink className="h-4 w-4" />
+        <ExternalLink className="h-3 w-3" />
         BeatSaver
       </a>
 
@@ -58,7 +58,7 @@ export function OneClickButton({
         rel="noopener noreferrer"
         className={linkClass}
       >
-        <Download className="h-4 w-4" />
+        <Download className="h-3 w-3" />
         ZIP
       </a>
     </div>

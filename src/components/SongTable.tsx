@@ -2,7 +2,6 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef, useState, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
 import {
   ChevronLeft,
@@ -79,7 +78,7 @@ export function SongTable({ tagList }: SongTableProps) {
   const rowVirtualizer = useVirtualizer({
     count: songs.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 56,
+    estimateSize: () => 52,
     overscan: 10,
   })
 
@@ -97,21 +96,21 @@ export function SongTable({ tagList }: SongTableProps) {
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search songs, authors, mappers, keys..."
+            placeholder="Search songs, mappers, keys…"
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-8"
+            className="h-8 pl-8 text-sm"
           />
         </div>
         <Button
           variant={showFilters ? 'default' : 'outline'}
           size="sm"
           onClick={() => setShowFilters((s) => !s)}
-          className="gap-1"
+          className="h-8 gap-1 text-xs"
         >
-          <SlidersHorizontal className="h-4 w-4" />
+          <SlidersHorizontal className="h-3.5 w-3.5" />
           Filters
         </Button>
         <SortControl
@@ -136,7 +135,7 @@ export function SongTable({ tagList }: SongTableProps) {
 
       {/* Error state */}
       {error && (
-        <div className="p-4 text-sm text-destructive">Error: {error}</div>
+        <div className="px-4 py-2 text-sm text-destructive">{error}</div>
       )}
 
       {/* Table */}
@@ -144,23 +143,23 @@ export function SongTable({ tagList }: SongTableProps) {
         <div className="relative">
           {/* Header */}
           <div className="sticky top-0 z-10 flex border-b bg-background">
-            <div className="w-12 shrink-0 px-2 py-2"></div>
-            <div className="w-16 shrink-0 px-2 py-2 text-xs font-medium text-muted-foreground">Key</div>
+            <div className="w-10 shrink-0" />
+            <div className="w-14 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Key</div>
             <SortHeader label="Song" sortKey="song_name" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="flex-1" />
-            <div className="w-28 shrink-0 truncate px-2 py-2 text-xs font-medium text-muted-foreground">Author</div>
-            <div className="w-28 shrink-0 truncate px-2 py-2 text-xs font-medium text-muted-foreground">Mapper</div>
+            <div className="w-24 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Author</div>
+            <div className="w-24 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Mapper</div>
             <SortHeader label="BPM" sortKey="bpm" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-12 shrink-0" />
             <SortHeader label="Dur" sortKey="duration" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-12 shrink-0" />
             <SortHeader label="Rating" sortKey="rating" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-14 shrink-0" />
-            <div className="w-16 shrink-0 px-2 py-2 text-xs font-medium text-muted-foreground">Ranked</div>
-            <SortHeader label="Upload" sortKey="upload_time" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-24 shrink-0" />
+            <div className="w-14 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Ranked</div>
+            <SortHeader label="Uploaded" sortKey="upload_time" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-24 shrink-0" />
           </div>
 
           {/* Virtual rows */}
           {isLoading && songs.length === 0 ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>
+            <div className="py-8 text-center text-sm text-muted-foreground">Loading…</div>
           ) : songs.length === 0 ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">No songs found</div>
+            <div className="py-8 text-center text-sm text-muted-foreground">No songs found</div>
           ) : (
             <div
               style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}
@@ -172,7 +171,7 @@ export function SongTable({ tagList }: SongTableProps) {
                   <div
                     key={song.map_id}
                     onClick={() => setSelectedSong(song)}
-                    className="flex cursor-pointer items-center border-b transition-colors hover:bg-muted/50"
+                    className="group flex cursor-pointer items-center border-b border-border/50 transition-colors hover:bg-muted/40"
                     style={{
                       position: 'absolute',
                       top: 0,
@@ -182,35 +181,37 @@ export function SongTable({ tagList }: SongTableProps) {
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
                   >
-                    <div className="w-12 shrink-0 px-2 py-1">
+                    {/* Cyan hover accent on left edge */}
+                    <div className="w-0.5 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="w-10 shrink-0 px-2 py-1">
                       <img
                         src={`https://cdn.beatsaver.com/${song.hash}.jpg`}
                         alt=""
                         loading="lazy"
-                        className="h-10 w-10 rounded object-cover"
+                        className="h-8 w-8 rounded object-cover"
                         onError={(e) => {
                           ;(e.target as HTMLImageElement).style.opacity = '0'
                         }}
                       />
                     </div>
-                    <div className="w-16 shrink-0 px-2 font-mono text-xs">{song.key}</div>
+                    <div className="w-14 shrink-0 px-2 font-mono text-xs text-muted-foreground">{song.key}</div>
                     <div className="flex-1 truncate px-2 text-sm font-medium">{song.song_name}</div>
-                    <div className="w-28 shrink-0 truncate px-2 text-xs text-muted-foreground">{song.song_author}</div>
-                    <div className="w-28 shrink-0 truncate px-2 text-xs text-muted-foreground">{song.level_author}</div>
-                    <div className="w-12 shrink-0 px-2 text-sm">{song.bpm.toFixed(0)}</div>
-                    <div className="w-12 shrink-0 px-2 text-sm">{formatDuration(song.duration)}</div>
-                    <div className="w-14 shrink-0 px-2 text-sm">{(song.rating * 100).toFixed(0)}%</div>
-                    <div className="w-16 shrink-0 px-2">
+                    <div className="w-24 shrink-0 truncate px-2 text-xs text-muted-foreground">{song.song_author}</div>
+                    <div className="w-24 shrink-0 truncate px-2 text-xs text-muted-foreground">{song.level_author}</div>
+                    <div className="w-12 shrink-0 px-2 font-mono text-sm">{song.bpm.toFixed(0)}</div>
+                    <div className="w-12 shrink-0 px-2 font-mono text-sm text-muted-foreground">{formatDuration(song.duration)}</div>
+                    <div className="w-14 shrink-0 px-2 font-mono text-sm">{(song.rating * 100).toFixed(0)}%</div>
+                    <div className="w-14 shrink-0 px-2">
                       <div className="flex gap-1">
                         {isRankedSet(song.ranked_states, RankedStates.ScoresaberRanked) && (
-                          <Badge variant="secondary" className="text-xs">SS</Badge>
+                          <span className="text-[10px] font-bold text-primary">SS</span>
                         )}
                         {isRankedSet(song.ranked_states, RankedStates.BeatleaderRanked) && (
-                          <Badge variant="secondary" className="text-xs">BL</Badge>
+                          <span className="text-[10px] font-bold text-accent">BL</span>
                         )}
                       </div>
                     </div>
-                    <div className="w-24 shrink-0 px-2 text-xs text-muted-foreground">
+                    <div className="w-24 shrink-0 px-2 font-mono text-xs text-muted-foreground">
                       {new Date(song.upload_time * 1000).toLocaleDateString('en-US', {
                         year: '2-digit',
                         month: 'short',
@@ -226,13 +227,11 @@ export function SongTable({ tagList }: SongTableProps) {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between border-t px-4 py-2">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center justify-between border-t px-4 py-1.5">
+        <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
           <span>{total.toLocaleString()} songs</span>
           <span>·</span>
-          <span>
-            Page {page} of {totalPages}
-          </span>
+          <span>{page}/{totalPages}</span>
         </div>
         <div className="flex items-center gap-2">
           <Select
@@ -241,7 +240,7 @@ export function SongTable({ tagList }: SongTableProps) {
               setPageSize(Number(e.target.value))
               setPage(1)
             }}
-            className="h-8 w-20"
+            className="h-7 w-16 text-xs"
           >
             <option value="50">50</option>
             <option value="100">100</option>
@@ -252,16 +251,18 @@ export function SongTable({ tagList }: SongTableProps) {
             size="icon"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
+            className="h-7 w-7"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="outline"
             size="icon"
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
+            className="h-7 w-7"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
@@ -297,14 +298,14 @@ function SortHeader({ label, sortKey, currentSort, sortDir, onClick, className }
     <div className={`shrink-0 px-2 py-2 ${className ?? ''}`}>
       <button
         onClick={() => onClick(sortKey)}
-        className={`flex items-center gap-1 text-xs font-medium hover:text-foreground ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}
+        className={`flex items-center gap-0.5 font-mono text-[10px] font-medium uppercase tracking-wider transition-colors hover:text-foreground ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
       >
         {label}
         {isActive &&
           (sortDir === 'asc' ? (
-            <ChevronUp className="h-3 w-3" />
+            <ChevronUp className="h-2.5 w-2.5" />
           ) : (
-            <ChevronDown className="h-3 w-3" />
+            <ChevronDown className="h-2.5 w-2.5" />
           ))}
       </button>
     </div>

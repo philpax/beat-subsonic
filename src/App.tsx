@@ -15,11 +15,13 @@ function App() {
     } catch {
       // ignore
     }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
+    // Default to dark — the neon-arcade aesthetic is the primary identity
+    return true
   })
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark)
+    document.documentElement.classList.toggle('light', !isDark)
     try {
       localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light')
     } catch {

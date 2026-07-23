@@ -58,8 +58,8 @@ function DialogTitle({ children, className }: { children: React.ReactNode; class
   return <h2 className={cn('text-lg font-semibold leading-none tracking-tight', className)}>{children}</h2>
 }
 
-function DialogDescription({ children }: { children: React.ReactNode }) {
-  return <p className="text-sm text-muted-foreground">{children}</p>
+function DialogDescription({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <p className={cn('text-sm text-muted-foreground', className)}>{children}</p>
 }
 
 export { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription }

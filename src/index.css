@@ -3,48 +3,49 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: hsl(0 0% 100%);
-  --foreground: hsl(222.2 84% 4.9%);
-  --card: hsl(0 0% 100%);
-  --card-foreground: hsl(222.2 84% 4.9%);
-  --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(222.2 84% 4.9%);
-  --primary: hsl(262.1 83.3% 57.8%);
-  --primary-foreground: hsl(210 40% 98%);
-  --secondary: hsl(210 40% 96.1%);
-  --secondary-foreground: hsl(222.2 47.4% 11.2%);
-  --muted: hsl(210 40% 96.1%);
-  --muted-foreground: hsl(215.4 16.3% 46.9%);
-  --accent: hsl(210 40% 96.1%);
-  --accent-foreground: hsl(222.2 47.4% 11.2%);
-  --destructive: hsl(0 84.2% 60.2%);
-  --destructive-foreground: hsl(210 40% 98%);
-  --border: hsl(214.3 31.8% 91.4%);
-  --input: hsl(214.3 31.8% 91.4%);
-  --ring: hsl(262.1 83.3% 57.8%);
-  --radius: 0.5rem;
+  --background: #0a0a0f;
+  --foreground: #e8e8f0;
+  --card: #11111a;
+  --card-foreground: #e8e8f0;
+  --popover: #11111a;
+  --popover-foreground: #e8e8f0;
+  --primary: #00e5ff;
+  --primary-foreground: #0a0a0f;
+  --secondary: #16161f;
+  --secondary-foreground: #e8e8f0;
+  --muted: #16161f;
+  --muted-foreground: #6b6b85;
+  --accent: #ff2d6f;
+  --accent-foreground: #ffffff;
+  --destructive: #ff2d6f;
+  --destructive-foreground: #ffffff;
+  --border: #1e1e2e;
+  --input: #1e1e2e;
+  --ring: #00e5ff;
+  --radius: 0.375rem;
 }
 
-.dark {
-  --background: hsl(222.2 84% 4.9%);
-  --foreground: hsl(210 40% 98%);
-  --card: hsl(222.2 84% 4.9%);
-  --card-foreground: hsl(210 40% 98%);
-  --popover: hsl(222.2 84% 4.9%);
-  --popover-foreground: hsl(210 40% 98%);
-  --primary: hsl(263.4 70% 50.4%);
-  --primary-foreground: hsl(210 40% 98%);
-  --secondary: hsl(217.2 32.6% 17.5%);
-  --secondary-foreground: hsl(210 40% 98%);
-  --muted: hsl(217.2 32.6% 17.5%);
-  --muted-foreground: hsl(215 20.2% 65.1%);
-  --accent: hsl(217.2 32.6% 17.5%);
-  --accent-foreground: hsl(210 40% 98%);
-  --destructive: hsl(0 62.8% 30.6%);
-  --destructive-foreground: hsl(210 40% 98%);
-  --border: hsl(217.2 32.6% 17.5%);
-  --input: hsl(217.2 32.6% 17.5%);
-  --ring: hsl(263.4 70% 50.4%);
+.light {
+  --background: #f8f8fb;
+  --foreground: #0a0a0f;
+  --card: #ffffff;
+  --card-foreground: #0a0a0f;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0f;
+  --primary: #0099b8;
+  --primary-foreground: #ffffff;
+  --secondary: #eeeef4;
+  --secondary-foreground: #0a0a0f;
+  --muted: #eeeef4;
+  --muted-foreground: #6b6b85;
+  --accent: #d61b54;
+  --accent-foreground: #ffffff;
+  --destructive: #d61b54;
+  --destructive-foreground: #ffffff;
+  --border: #d8d8e4;
+  --input: #d8d8e4;
+  --ring: #0099b8;
+  --radius: 0.375rem;
 }
 
 @theme inline {
@@ -80,6 +81,56 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  ::selection {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+}
+
+/* Saber gradient utility */
+.saber-gradient {
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+}
+
+/* Neon glow for active elements */
+.neon-glow {
+  box-shadow: 0 0 12px -2px var(--primary);
+}
+
+/* Thin scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Loading bar animation */
+@keyframes saber-ignition {
+  0% { width: 0%; opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { width: 100%; opacity: 0.6; }
+}
+
+.saber-bar {
+  animation: saber-ignition 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saber-bar {
+    animation: none;
+    width: 100%;
+    opacity: 0.4;
   }
 }
