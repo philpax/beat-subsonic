@@ -1,9 +1,9 @@
 /**
  * Data loading orchestrator.
  *
- * Iterates data sources (Direct first, jsDelivr fallback), using ETag-based
- * change detection. If a source returns 304 (unchanged), the data is already
- * cached in SQLite and we skip re-parse/re-import entirely.
+ * FCI split:
+ * - planDataLoad = pure function that decides what to do given current state
+ * - ensureDataLoaded = imperative shell that executes the plan with I/O
  */
 
 import { DATA_SOURCES } from './sources'
@@ -17,24 +17,46 @@ export type DataLoadStage = 'idle' | 'fetching' | 'parsing' | 'ready' | 'error'
 
 export interface DataLoadProgress {
   stage: DataLoadStage
-  /** Compressed bytes downloaded so far (for progress display) */
   bytesLoaded: number
-  /** Source currently being fetched */
   sourceId: string
-  /** Error message if stage === 'error' */
   error?: string
 }
 
 export interface EnsureDataResult {
-  /** True if new data was fetched and parsed */
   changed: boolean
-  /** The parsed database (only present when changed === true) */
   database?: ParsedDatabase
-  /** The ETag of the current data */
   etag?: string
-  /** The source that was used */
   source: DataSource
 }
+
+// ---- Pure functions (Functional Core) ----
+
+/**
+ * Given a fetch result and the stored ETag, decide what to do next.
+ * Returns either 'skip' (304, data unchanged) or 'parse' (200, new data).
+ */
+export function planAfterFetch(
+  fetchResult: { changed: boolean; bytes?: Uint8Array; etag?: string },
+  storedEtag: string | undefined,
+  source: DataSource
+):
+  | { action: 'skip'; result: EnsureDataResult }
+  | { action: 'parse'; bytes: Uint8Array; etag?: string; source: DataSource } {
+  if (!fetchResult.changed) {
+    return {
+      action: 'skip',
+      result: { changed: false, etag: storedEtag, source },
+    }
+  }
+  return {
+    action: 'parse',
+    bytes: fetchResult.bytes!,
+    etag: fetchResult.etag,
+    source,
+  }
+}
+
+// ---- Imperative Shell ----
 
 /**
  * Ensure the song data is loaded.
@@ -43,8 +65,6 @@ export interface EnsureDataResult {
  * 1. Use that source's stored ETag for If-None-Match.
  * 2. If 304: data unchanged — skip parse/import (data is in SQLite cache).
  * 3. If 200: decompress, parse, and return the ParsedDatabase.
- *
- * On success, stores the ETag for the source that worked.
  */
 export async function ensureDataLoaded(
   onProgress?: (progress: DataLoadProgress) => void
@@ -61,7 +81,7 @@ export async function ensureDataLoaded(
         sourceId: source.id,
       })
 
-      const result = await fetchSongData(source, storedEtag, (loaded) => {
+      const fetchResult = await fetchSongData(source, storedEtag, (loaded) => {
         onProgress?.({
           stage: 'fetching',
           bytesLoaded: loaded,
@@ -69,49 +89,44 @@ export async function ensureDataLoaded(
         })
       })
 
-      if (!result.changed) {
-        // 304 — data unchanged, SQLite cache is valid
-        return {
-          changed: false,
-          etag: storedEtag,
-          source,
-        }
+      const plan = planAfterFetch(fetchResult, storedEtag, source)
+
+      if (plan.action === 'skip') {
+        return plan.result
       }
 
       // Data changed — parse it
       onProgress?.({
         stage: 'parsing',
-        bytesLoaded: result.bytes?.length ?? 0,
+        bytesLoaded: plan.bytes.length,
         sourceId: source.id,
       })
 
-      const database = parseSongDetails(result.bytes!)
+      const database = parseSongDetails(plan.bytes)
 
       // Store the ETag for this source
-      if (result.etag) {
-        setStoredEtag(source.id, result.etag)
+      if (plan.etag) {
+        setStoredEtag(source.id, plan.etag)
       }
 
       onProgress?.({
         stage: 'ready',
-        bytesLoaded: result.bytes?.length ?? 0,
+        bytesLoaded: plan.bytes.length,
         sourceId: source.id,
       })
 
       return {
         changed: true,
         database,
-        etag: result.etag,
+        etag: plan.etag,
         source,
       }
     } catch (err) {
       lastError = err as Error
-      // Try the next source
       continue
     }
   }
 
-  // All sources failed
   onProgress?.({
     stage: 'error',
     bytesLoaded: 0,

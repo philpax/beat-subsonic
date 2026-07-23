@@ -1,5 +1,8 @@
 export { getDbClient, DbClient } from './client'
 export type { DbStats, QueryResult } from './client'
+export { SongDatabase } from './song-database'
+export type { SqliteDb, PreparedStatement, ImportResult } from './song-database'
+export { songToBindParams, difficultyToBindParams, buildMetaEntries } from './song-database'
 export {
   buildSongQuery,
   buildCountQuery,

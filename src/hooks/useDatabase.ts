@@ -12,6 +12,31 @@ export interface DatabaseState {
   dataChanged: boolean
 }
 
+// ---- Pure function (Functional Core) ----
+
+/**
+ * Decide what to do after checking the DB cache and fetching data.
+ * Returns the action the shell should take.
+ */
+export function planDataLoad(
+  cachedSongCount: number,
+  fetchResult: { changed: boolean; database?: { tagList: string[] } }
+): { action: 'import'; database: { tagList: string[] } } | { action: 'use-cache' } | { action: 'skip' } {
+  if (!fetchResult.changed) {
+    if (cachedSongCount > 0) {
+      return { action: 'use-cache' }
+    }
+    // ETag matched but no data in DB — shouldn't happen, but handle gracefully
+    return { action: 'skip' }
+  }
+  if (fetchResult.database) {
+    return { action: 'import', database: fetchResult.database }
+  }
+  return { action: 'skip' }
+}
+
+// ---- Imperative Shell ----
+
 export function useDatabase() {
   const [state, setState] = useState<DatabaseState>({
     status: 'idle',
@@ -30,36 +55,34 @@ export function useDatabase() {
     try {
       const client = getDbClient()
 
-      // Initialize the database worker
       setState((s) => ({ ...s, status: 'fetching', error: null }))
       await client.init()
 
-      // Check if data is already cached
       const stats = await client.getStats()
 
-      if (stats.songCount > 0) {
-        // Data already in SQLite — check if ETag changed
-        const result = await ensureDataLoaded((progress) => {
-          setState((s) => ({
-            ...s,
-            status: progress.stage === 'parsing' ? 'parsing' : 'fetching',
-            progress,
-          }))
-        })
+      const result = await ensureDataLoaded((progress) => {
+        setState((s) => ({
+          ...s,
+          status: progress.stage === 'parsing' ? 'parsing' : 'fetching',
+          progress,
+        }))
+      })
 
-        if (result.changed && result.database) {
-          // New data — re-import
+      const plan = planDataLoad(stats.songCount, result)
+
+      switch (plan.action) {
+        case 'import':
           setState((s) => ({ ...s, status: 'importing' }))
-          const importStats = await client.importData(result.database)
+          const importStats = await client.importData(result.database!)
           setState({
             status: 'ready',
             error: null,
             progress: null,
-            stats: { ...importStats, tagList: result.database.tagList },
+            stats: { ...importStats, tagList: plan.database.tagList },
             dataChanged: true,
           })
-        } else {
-          // Data unchanged — use cached
+          break
+        case 'use-cache':
           setState({
             status: 'ready',
             error: null,
@@ -67,29 +90,8 @@ export function useDatabase() {
             stats,
             dataChanged: false,
           })
-        }
-      } else {
-        // No cached data — fetch and import
-        const result = await ensureDataLoaded((progress) => {
-          setState((s) => ({
-            ...s,
-            status: progress.stage === 'parsing' ? 'parsing' : 'fetching',
-            progress,
-          }))
-        })
-
-        if (result.database) {
-          setState((s) => ({ ...s, status: 'importing' }))
-          const importStats = await client.importData(result.database)
-          setState({
-            status: 'ready',
-            error: null,
-            progress: null,
-            stats: { ...importStats, tagList: result.database.tagList },
-            dataChanged: true,
-          })
-        } else {
-          // ETag matched but no data in DB — shouldn't happen, but handle gracefully
+          break
+        case 'skip':
           setState({
             status: 'ready',
             error: null,
@@ -97,7 +99,7 @@ export function useDatabase() {
             stats,
             dataChanged: false,
           })
-        }
+          break
       }
     } catch (err) {
       setState({

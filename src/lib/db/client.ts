@@ -91,13 +91,7 @@ export class DbClient {
   }
 
   async getStats(): Promise<DbStats> {
-    const result = await this.send('stats', {})
-    // stats doesn't include tagList — fetch separately
-    const tagListStr = await this.send('meta', { key: 'tag_list' })
-    return {
-      ...(result as unknown as DbStats),
-      tagList: tagListStr ? JSON.parse(tagListStr as string) : [],
-    }
+    return (await this.send('stats', {})) as unknown as DbStats
   }
 
   async getMeta(key: string): Promise<string | null> {
