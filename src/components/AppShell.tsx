@@ -30,7 +30,7 @@ export function AppShell({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 bg-background">
-        <div className="flex items-center justify-between gap-4 px-4 py-2.5">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-6 py-2.5">
           <div className="flex items-baseline gap-3">
             <h1 className="text-base font-bold tracking-tight">BeatSubsonic</h1>
             <span className="text-xs text-muted-foreground">
@@ -50,7 +50,9 @@ export function AppShell({
         {/* Saber gradient underline */}
         <div className="saber-gradient h-px" />
       </header>
-      <main className="flex-1 overflow-hidden">{children}</main>
+      <main className="flex-1 overflow-hidden">
+        <div className="mx-auto h-full max-w-[1600px] px-6">{children}</div>
+      </main>
     </div>
   )
 }

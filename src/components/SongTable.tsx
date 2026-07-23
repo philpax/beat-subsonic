@@ -94,7 +94,7 @@ export function SongTable({ tagList }: SongTableProps) {
   return (
     <div className="flex h-full flex-col">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
+      <div className="flex flex-wrap items-center gap-2 border-b py-2">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -135,7 +135,7 @@ export function SongTable({ tagList }: SongTableProps) {
 
       {/* Error state */}
       {error && (
-        <div className="px-4 py-2 text-sm text-destructive">{error}</div>
+        <div className="py-2 text-sm text-destructive">{error}</div>
       )}
 
       {/* Table */}
@@ -227,7 +227,7 @@ export function SongTable({ tagList }: SongTableProps) {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between border-t px-4 py-1.5">
+      <div className="flex items-center justify-between border-t py-1.5">
         <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
           <span>{total.toLocaleString()} songs</span>
           <span>·</span>
