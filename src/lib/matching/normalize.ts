@@ -357,6 +357,14 @@ const SUPERFLUOUS_WORDS = new Set([
   'version',
   'mono',
   'stereo',
+  // Connector — "Rip & Tear" and "Rip and Tear" must normalize identically
+  // ("&" is punctuation and vanishes, so "and" must vanish too)
+  'and',
+  // OST filler — soundtrack rips title the same music "X BGM", "X Theme",
+  // or just "X" depending on the source
+  'bgm',
+  'theme',
+  'ost',
 ])
 
 /**
