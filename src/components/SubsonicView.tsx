@@ -58,7 +58,7 @@ export function SubsonicView() {
 
   // Pagination state
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = usePersistentState<number>('subsonic-pageSize', PAGE_SIZE_DEFAULT)
+  const [pageSize, setPageSize] = usePersistentState<number>('table-pageSize', PAGE_SIZE_DEFAULT)
 
   // Debounce search
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)

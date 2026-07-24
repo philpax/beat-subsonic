@@ -36,7 +36,7 @@ export function SongTable({ tagList }: SongTableProps) {
 
   // Pagination state
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = usePersistentState<number>('pageSize', PAGE_SIZE_DEFAULT)
+  const [pageSize, setPageSize] = usePersistentState<number>('table-pageSize', PAGE_SIZE_DEFAULT)
 
   // Selected song for detail dialog
   const [selectedSong, setSelectedSong] = useState<SongRow | null>(null)

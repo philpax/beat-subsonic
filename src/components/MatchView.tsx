@@ -12,7 +12,7 @@ import { ChevronDown, ChevronRight, Loader2, AlertCircle, Search, Zap } from 'lu
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
-const PAGE_SIZE_DEFAULT = 50
+const PAGE_SIZE_DEFAULT = 100
 
 /** Sortable columns of the expanded per-track match table. */
 type MatchSortKey =
@@ -82,7 +82,7 @@ export function MatchView({ tagList }: MatchViewProps) {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [minScore, setMinScore] = useState(0)
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = usePersistentState<number>('match-pageSize', PAGE_SIZE_DEFAULT)
+  const [pageSize, setPageSize] = usePersistentState<number>('table-pageSize', PAGE_SIZE_DEFAULT)
 
   // Debounce search
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
