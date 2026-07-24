@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Moon, Sun } from 'lucide-react'
-import { formatIsoDate } from '@/components/table-shared'
+import { formatIsoDate } from '@/lib/format'
 
 interface AppShellProps {
   children: ReactNode

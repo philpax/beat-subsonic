@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Clock, Database } from 'lucide-react'
-import { formatIsoDate } from '@/components/table-shared'
+import { formatIsoDate } from '@/lib/format'
 
 interface DataStatusBadgeProps {
   scrapeTime: number | null

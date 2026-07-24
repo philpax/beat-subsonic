@@ -5,12 +5,8 @@ import { Input } from '@/components/ui/input'
 import { useSubsonic } from '@/hooks/useSubsonic'
 import { useSubsonicQuery } from '@/hooks/useSubsonicQuery'
 import { usePersistentState } from '@/hooks/usePersistentState'
-import {
-  SortHeader,
-  Pagination,
-  formatDuration,
-  formatIsoDateTimeMs,
-} from '@/components/table-shared'
+import { SortHeader, Pagination } from '@/components/table-shared'
+import { formatDuration, formatIsoDateTimeMs } from '@/lib/format'
 import type { SubsonicSortKey } from '@/lib/subsonic/queries'
 import { RefreshCw, Search, Music, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
 
@@ -71,7 +67,7 @@ export function SubsonicView() {
         setSortDir('asc')
       }
     },
-    [sort],
+    [sort, setSort, setSortDir],
   )
 
   const fetchedDate = state.stats?.fetchedAt ? formatIsoDateTimeMs(state.stats.fetchedAt) : null

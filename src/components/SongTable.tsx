@@ -8,7 +8,8 @@ import { usePersistentState } from '@/hooks/usePersistentState'
 import { FilterPanel } from '@/components/FilterPanel'
 import { SortControl } from '@/components/SortControl'
 import { SongDetailDialog } from '@/components/SongDetailDialog'
-import { SortHeader, Pagination, formatDuration, formatIsoDate } from '@/components/table-shared'
+import { SortHeader, Pagination } from '@/components/table-shared'
+import { formatDuration, formatIsoDate } from '@/lib/format'
 import { buildOneClickUrl } from '@/lib/types'
 import type { SongFilters, SortKey } from '@/lib/db/queries'
 import { RankedStates, isRankedSet } from '@/lib/proto/enums'
@@ -81,7 +82,7 @@ export function SongTable({ tagList }: SongTableProps) {
         setSortDir('desc')
       }
     },
-    [sort],
+    [sort, setSort, setSortDir],
   )
 
   return (

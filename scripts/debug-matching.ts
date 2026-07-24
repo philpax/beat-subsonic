@@ -14,7 +14,6 @@ import {
   type TrackKey,
 } from '../src/lib/matching/matcher'
 import { fuzzyMatch } from '../src/lib/matching/fuzzy'
-import { stripAlbumParentheses, stripSuperfluousWords } from '../src/lib/matching/normalize'
 
 interface BeatSaverSong {
   map_id: number

@@ -59,7 +59,7 @@ async function main() {
   const client = new SubsonicClient(subsonicUrl, subsonicUser, subsonicPassword)
   await client.ping()
 
-  const result = await fetchAllSubsonicData(client, (fetched, total) => {
+  const result = await fetchAllSubsonicData(client, (fetched) => {
     process.stdout.write(`\r  ${fetched.toLocaleString()} tracks fetched`)
   })
   console.log('')

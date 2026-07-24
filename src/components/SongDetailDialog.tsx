@@ -24,7 +24,7 @@ import {
   DifficultyBadge,
   ModBadges,
 } from '@/components/Badges'
-import { formatDuration, formatIsoDateTime } from '@/components/table-shared'
+import { formatDuration, formatIsoDateTime } from '@/lib/format'
 import { getDbClient } from '@/lib/db/client'
 import type { SongRow, DifficultyRow } from '@/lib/types'
 
