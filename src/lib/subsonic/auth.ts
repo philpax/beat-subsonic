@@ -8,10 +8,10 @@
  * `crypto.getRandomValues` is available in both browser and Node (via globalThis.crypto).
  */
 
-// js-md5 uses `export =` which doesn't play well with verbatimModuleSyntax.
-// Use a direct require + cast to access the .hex() function.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const md5 = require('js-md5') as { hex(input: string): string }
+// js-md5 uses `export =` (CommonJS). In ESM mode the callable is at `.default`.
+// We import as namespace and access default.hex() for the MD5 hash.
+import * as md5Module from 'js-md5'
+const md5 = (md5Module as any).default ?? md5Module
 
 /** API version matching blackbird-subsonic's API_VERSION constant. */
 export const API_VERSION = '1.16.1'
