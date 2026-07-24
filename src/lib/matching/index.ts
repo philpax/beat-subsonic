@@ -20,6 +20,7 @@ export {
   matchTrackToMaps,
   matchAllTracks,
   computeMatchScore,
+  extractTrigrams,
 } from './matcher'
 export type {
   MapKey,

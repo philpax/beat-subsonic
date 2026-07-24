@@ -4,12 +4,16 @@
  * Pure functions only (no I/O). All decision logic is testable in Node.
  *
  * Strategy:
- * - Build a match index from BeatSaver map keys (normalized variants)
- * - For each Subsonic track, check exact/contains match first (O(1) lookup),
- *   then fall back to fuzzy matching on maps sharing the same first word.
+ * - Build a trigram index from BeatSaver map variants for O(1) candidate lookup
+ * - For each track, extract trigrams and find candidate maps that share trigrams
+ * - Check exact/contains match first, then fuzzy match on candidates only
  * - A match is found if ANY normalized variant of the track's key contains
  *   (or is contained by) ANY normalized variant of the map's key, OR if the
  *   fuzzy match score ≥ threshold.
+ *
+ * Memory tradeoff: the trigram index uses more memory (Map<trigram, Set<mapIdx>>)
+ * but eliminates the O(N²) full scan. For 340k maps with ~2 variants each,
+ * the index has ~2-4M entries — manageable in a worker.
  */
 
 import { normalizeVariants, stripAlbumParentheses, stripSuperfluousWords } from './normalize'
@@ -31,10 +35,10 @@ export interface TrackKey {
 
 /** Pre-built index for fast map lookups. */
 export interface MatchIndex {
-  /** Maps each normalized variant string → array of map indices. */
+  /** Maps each normalized variant string → array of map indices (exact match). */
   variantIndex: Map<string, number[]>
-  /** Maps first word of each variant → array of map indices (for fuzzy fallback). */
-  firstWordBuckets: Map<string, number[]>
+  /** Maps each trigram (3-char substring) → set of map indices that contain it. */
+  trigramIndex: Map<string, Set<number>>
 }
 
 /** Result of matching a single track to maps. */
@@ -83,6 +87,24 @@ export function buildTrackKey(track: {
   return normalizeVariants(combined)
 }
 
+// ---- Trigram extraction (pure) ----
+
+/** Minimum variant length to extract trigrams from. */
+const MIN_TRIGRAM_LENGTH = 3
+
+/**
+ * Extract all trigrams (3-character substrings) from a string.
+ * For strings shorter than 3 chars, returns the string itself.
+ */
+export function extractTrigrams(s: string): string[] {
+  if (s.length < MIN_TRIGRAM_LENGTH) return [s]
+  const trigrams: string[] = []
+  for (let i = 0; i <= s.length - 3; i++) {
+    trigrams.push(s.slice(i, i + 3))
+  }
+  return trigrams
+}
+
 // ---- Index building (pure) ----
 
 /**
@@ -90,15 +112,19 @@ export function buildTrackKey(track: {
  *
  * Creates:
  * - A variant index: Map<normalizedVariant, number[]> for O(1) exact lookup
- * - First-word buckets: Map<firstWord, number[]> for fuzzy fallback
+ * - A trigram index: Map<trigram, Set<number>> for candidate retrieval
+ *
+ * The trigram index maps each 3-char substring to the set of map indices
+ * whose variants contain that trigram. This lets us find candidate maps
+ * for a track in O(trigrams_per_track) instead of scanning all maps.
  */
 export function buildMatchIndex(maps: MapKey[]): MatchIndex {
   const variantIndex = new Map<string, number[]>()
-  const firstWordBuckets = new Map<string, number[]>()
+  const trigramIndex = new Map<string, Set<number>>()
 
   for (const map of maps) {
     for (const variant of map.variants) {
-      // Add to variant index
+      // Add to variant index (exact match)
       const existing = variantIndex.get(variant)
       if (existing) {
         if (!existing.includes(map.index)) existing.push(map.index)
@@ -106,20 +132,42 @@ export function buildMatchIndex(maps: MapKey[]): MatchIndex {
         variantIndex.set(variant, [map.index])
       }
 
-      // Add to first-word bucket
-      const firstWord = variant.split(/\s+/)[0]
-      if (firstWord) {
-        const bucket = firstWordBuckets.get(firstWord)
-        if (bucket) {
-          if (!bucket.includes(map.index)) bucket.push(map.index)
-        } else {
-          firstWordBuckets.set(firstWord, [map.index])
+      // Add to trigram index (candidate retrieval)
+      const trigrams = extractTrigrams(variant)
+      for (const trigram of trigrams) {
+        let set = trigramIndex.get(trigram)
+        if (!set) {
+          set = new Set<number>()
+          trigramIndex.set(trigram, set)
         }
+        set.add(map.index)
       }
     }
   }
 
-  return { variantIndex, firstWordBuckets }
+  return { variantIndex, trigramIndex }
+}
+
+/**
+ * Find candidate map indices for a track variant using the trigram index.
+ * Returns maps that share at least one trigram with the track variant.
+ * This is O(trigrams_per_track) for lookup, not O(total_maps).
+ */
+function findCandidates(
+  trackVariant: string,
+  index: MatchIndex
+): Set<number> {
+  const candidates = new Set<number>()
+  const trigrams = extractTrigrams(trackVariant)
+  for (const trigram of trigrams) {
+    const maps = index.trigramIndex.get(trigram)
+    if (maps) {
+      for (const mapIdx of maps) {
+        candidates.add(mapIdx)
+      }
+    }
+  }
+  return candidates
 }
 
 // ---- Matching (pure) ----
@@ -129,8 +177,7 @@ export function buildMatchIndex(maps: MapKey[]): MatchIndex {
  *
  * Checks:
  * 1. Exact variant match (O(1) lookup in variantIndex)
- * 2. Contains check (either direction, across all variant pairs)
- * 3. Fuzzy match ≥ threshold (only on maps sharing the same first word)
+ * 2. Contains check + fuzzy match on trigram candidates only
  *
  * Returns indices of all matching maps.
  */
@@ -149,41 +196,29 @@ export function matchTrackToMaps(
       for (const idx of exact) matched.add(idx)
     }
 
-    // 2. Contains check + fuzzy match on maps sharing the same first word
-    const firstWord = trackVariant.split(/\s+/)[0]
-    if (firstWord) {
-      const bucket = index.firstWordBuckets.get(firstWord)
-      if (bucket) {
-        for (const mapIdx of bucket) {
-          if (matched.has(mapIdx)) continue
-          const mapVars = maps[mapIdx]?.variants
-          if (!mapVars) continue
+    // 2. Find candidates via trigram index, then check contains + fuzzy
+    const candidates = findCandidates(trackVariant, index)
+    for (const mapIdx of candidates) {
+      if (matched.has(mapIdx)) continue
 
-          for (const mapVariant of mapVars) {
-            if (
-              trackVariant.includes(mapVariant) ||
-              mapVariant.includes(trackVariant)
-            ) {
-              matched.add(mapIdx)
-              break
-            }
-            if (fuzzyMatch(trackVariant, mapVariant) >= threshold) {
-              matched.add(mapIdx)
-              break
-            }
-          }
+      const mapVars = maps[mapIdx]?.variants
+      if (!mapVars) continue
+
+      for (const mapVariant of mapVars) {
+        // Contains check (either direction)
+        if (
+          trackVariant.includes(mapVariant) ||
+          mapVariant.includes(trackVariant)
+        ) {
+          matched.add(mapIdx)
+          break
         }
-      }
-    }
 
-    // 3. Scan full variant index for contains matches (handles first-word mismatch)
-    for (const [mapVariant, mapIndices] of index.variantIndex) {
-      if (mapIndices.every((idx) => matched.has(idx))) continue
-      if (
-        trackVariant.includes(mapVariant) ||
-        mapVariant.includes(trackVariant)
-      ) {
-        for (const idx of mapIndices) matched.add(idx)
+        // Fuzzy match
+        if (fuzzyMatch(trackVariant, mapVariant) >= threshold) {
+          matched.add(mapIdx)
+          break
+        }
       }
     }
   }
@@ -194,7 +229,7 @@ export function matchTrackToMaps(
 /**
  * Match all tracks against all maps.
  *
- * Builds the match index, then batch-matches all tracks.
+ * Builds the trigram index, then batch-matches all tracks.
  * Returns only tracks with ≥1 match.
  *
  * This is the main entry point for the matching engine.
@@ -236,52 +271,34 @@ export function matchAllTracks(
         for (const idx of exact) matched.add(idx)
       }
 
-      // 2. Contains check + fuzzy match on maps sharing the same first word
-      const firstWord = trackVariant.split(/\s+/)[0]
-      if (firstWord) {
-        const bucket = index.firstWordBuckets.get(firstWord)
-        if (bucket) {
-          for (const mapIdx of bucket) {
-            if (matched.has(mapIdx)) continue
+      // 2. Find candidates via trigram index, then check contains + fuzzy
+      const candidates = findCandidates(trackVariant, index)
+      for (const mapIdx of candidates) {
+        if (matched.has(mapIdx)) continue
 
-            const mapVars = mapVariantsByIndex.get(mapIdx)
-            if (!mapVars) continue
+        const mapVars = mapVariantsByIndex.get(mapIdx)
+        if (!mapVars) continue
 
-            let isMatch = false
+        let isMatch = false
 
-            for (const mapVariant of mapVars) {
-              // Contains check (either direction)
-              if (
-                trackVariant.includes(mapVariant) ||
-                mapVariant.includes(trackVariant)
-              ) {
-                isMatch = true
-                break
-              }
+        for (const mapVariant of mapVars) {
+          // Contains check (either direction)
+          if (
+            trackVariant.includes(mapVariant) ||
+            mapVariant.includes(trackVariant)
+          ) {
+            isMatch = true
+            break
+          }
 
-              // Fuzzy match
-              if (fuzzyMatch(trackVariant, mapVariant) >= threshold) {
-                isMatch = true
-                break
-              }
-            }
-
-            if (isMatch) matched.add(mapIdx)
+          // Fuzzy match
+          if (fuzzyMatch(trackVariant, mapVariant) >= threshold) {
+            isMatch = true
+            break
           }
         }
-      }
 
-      // 3. Also check maps where the track variant is a substring of the map variant
-      //    or vice versa — scan the full variant index for contains matches
-      //    This handles cases where the first words don't match but one contains the other
-      for (const [mapVariant, mapIndices] of index.variantIndex) {
-        if (matched.size > 0 && mapIndices.every((idx) => matched.has(idx))) continue
-        if (
-          trackVariant.includes(mapVariant) ||
-          mapVariant.includes(trackVariant)
-        ) {
-          for (const idx of mapIndices) matched.add(idx)
-        }
+        if (isMatch) matched.add(mapIdx)
       }
     }
 

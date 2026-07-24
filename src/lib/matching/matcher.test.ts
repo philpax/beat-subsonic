@@ -5,6 +5,7 @@ import {
   buildMatchIndex,
   matchAllTracks,
   computeMatchScore,
+  extractTrigrams,
   type MapKey,
   type TrackKey,
 } from './matcher'
@@ -77,6 +78,21 @@ describe('buildTrackKey', () => {
   })
 })
 
+describe('extractTrigrams', () => {
+  it('extracts all 3-char substrings', () => {
+    expect(extractTrigrams('hello')).toEqual(['hel', 'ell', 'llo'])
+  })
+
+  it('returns the string itself for short strings', () => {
+    expect(extractTrigrams('ab')).toEqual(['ab'])
+    expect(extractTrigrams('abc')).toEqual(['abc'])
+  })
+
+  it('handles empty string', () => {
+    expect(extractTrigrams('')).toEqual([''])
+  })
+})
+
 describe('buildMatchIndex', () => {
   it('builds a variant index from map keys', () => {
     const maps: MapKey[] = [
@@ -90,15 +106,22 @@ describe('buildMatchIndex', () => {
     expect(index.variantIndex.has('omarupoko crabrave')).toBe(true)
   })
 
-  it('builds first-word buckets', () => {
+  it('builds trigram index for candidate retrieval', () => {
     const maps: MapKey[] = [
       { index: 0, variants: ['camellia body'] },
       { index: 1, variants: ['camellia ghost'] },
     ]
     const index = buildMatchIndex(maps)
 
-    expect(index.firstWordBuckets.has('camellia')).toBe(true)
-    expect(index.firstWordBuckets.get('camellia')).toEqual([0, 1])
+    // 'cam' trigram should be in both maps
+    expect(index.trigramIndex.has('cam')).toBe(true)
+    expect(index.trigramIndex.get('cam')!.has(0)).toBe(true)
+    expect(index.trigramIndex.get('cam')!.has(1)).toBe(true)
+
+    // 'bod' trigram should only be in map 0
+    expect(index.trigramIndex.has('bod')).toBe(true)
+    expect(index.trigramIndex.get('bod')!.has(0)).toBe(true)
+    expect(index.trigramIndex.get('bod')!.has(1)).toBe(false)
   })
 
   it('deduplicates map indices in the same bucket', () => {
