@@ -89,6 +89,11 @@ export class DbClient {
     return (await this.send('query', query)) as unknown as QueryResult
   }
 
+  /** Fetch every song row, unpaginated (querySongs caps pageSize at 500). */
+  async getAllSongs(): Promise<Record<string, unknown>[]> {
+    return (await this.send('all-songs', {})) as unknown as Record<string, unknown>[]
+  }
+
   async getDifficulties(songMapId: number): Promise<Record<string, unknown>[]> {
     return (await this.send('difficulties', { songMapId })) as unknown as Record<string, unknown>[]
   }

@@ -84,14 +84,9 @@ export function useMatchData() {
       const dbClient = getDbClient()
       await dbClient.init()
 
-      // Fetch all BeatSaver songs
-      const songResult = await dbClient.querySongs({
-        page: 1,
-        pageSize: 500000,
-        sort: 'upload_time',
-        sortDir: 'desc',
-      })
-      const songs = songResult.rows as unknown as SongRow[]
+      // Fetch all BeatSaver songs (querySongs is paginated and caps
+      // pageSize at 500 — matching needs the full, unpaginated set)
+      const songs = (await dbClient.getAllSongs()) as unknown as SongRow[]
       songsRef.current = songs
 
       // Fetch all Subsonic tracks

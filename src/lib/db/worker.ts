@@ -41,6 +41,9 @@ self.onmessage = async (event: MessageEvent) => {
       case 'query':
         result = songDb.querySongs(payload as SongQuery)
         break
+      case 'all-songs':
+        result = songDb.getAllSongs()
+        break
       case 'difficulties':
         result = songDb.getDifficulties(payload.songMapId as number)
         break

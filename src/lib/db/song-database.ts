@@ -220,6 +220,18 @@ export class SongDatabase {
     return { rows, total }
   }
 
+  /**
+   * Fetch every song row, unpaginated — for the matching engine, which
+   * needs the full map set (querySongs caps pageSize at 500 for the UI).
+   */
+  getAllSongs(): Record<string, unknown>[] {
+    const db = this.getDb()
+    return db.exec('SELECT * FROM songs', {
+      returnValue: 'resultRows',
+      rowMode: 'object',
+    }) as Record<string, unknown>[]
+  }
+
   getDifficulties(songMapId: number): Record<string, unknown>[] {
     const db = this.getDb()
     const built = buildDifficultiesQuery(songMapId)
