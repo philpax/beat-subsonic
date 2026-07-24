@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { getDbClient, type DbStats } from '@/lib/db/client'
 import { ensureDataLoaded, type DataLoadProgress } from '@/lib/data'
+import { getLastDownloadTime, setLastDownloadTime } from '@/lib/data/cache'
+
+/** Re-download the dump when the cached copy is older than this. */
+const MAX_DATA_AGE_MS = 24 * 60 * 60 * 1000
+
+/** Is the cached dump old enough to warrant a background re-download? */
+export function isDataStale(lastDownload: number | null, now: number): boolean {
+  if (lastDownload === null) return true
+  return now - lastDownload > MAX_DATA_AGE_MS
+}
 
 export type DatabaseStatus = 'idle' | 'fetching' | 'parsing' | 'importing' | 'ready' | 'error'
 
@@ -48,6 +58,25 @@ export function useDatabase() {
 
   const loading = useRef(false)
 
+  /**
+   * Re-download and re-import the dump without leaving the 'ready' state —
+   * the app keeps running on cached data and the stats swap in when done.
+   */
+  const refreshInBackground = useCallback(async (client: ReturnType<typeof getDbClient>) => {
+    try {
+      const result = await ensureDataLoaded()
+      setLastDownloadTime(Date.now())
+      if (result.changed && result.database) {
+        await client.importData(result.database)
+        const stats = await client.getStats()
+        setState((s) => ({ ...s, stats, dataChanged: true }))
+      }
+    } catch (err) {
+      // Non-fatal: the cached data keeps working; retry next load
+      console.warn('[useDatabase] Background data refresh failed:', err)
+    }
+  }, [])
+
   const load = useCallback(async (forceRefresh: boolean = false) => {
     if (loading.current) return
     loading.current = true
@@ -61,11 +90,11 @@ export function useDatabase() {
       const stats = await client.getStats()
 
       // If we already have cached data and this isn't a forced refresh,
-      // skip the network fetch entirely. GitHub raw doesn't expose ETag
-      // headers cross-origin (no Access-Control-Expose-Headers), so the
-      // ETag-based 304 check never works — every fetch downloads the full
-      // ~10MB file. Instead, use the SQLite cache and only re-fetch on
-      // explicit refresh.
+      // serve from the SQLite cache immediately. GitHub raw doesn't expose
+      // ETag headers cross-origin (no Access-Control-Expose-Headers), so a
+      // conditional-request freshness check isn't possible — instead, when
+      // the cached dump is older than 24h, re-download it in the background
+      // and swap the data in when done.
       if (!forceRefresh && stats.songCount > 0) {
         setState({
           status: 'ready',
@@ -74,6 +103,9 @@ export function useDatabase() {
           stats,
           dataChanged: false,
         })
+        if (isDataStale(getLastDownloadTime(), Date.now())) {
+          void refreshInBackground(client)
+        }
         return
       }
 
@@ -84,6 +116,7 @@ export function useDatabase() {
           progress,
         }))
       })
+      setLastDownloadTime(Date.now())
 
       const plan = planDataLoad(stats.songCount, result)
 
@@ -129,7 +162,7 @@ export function useDatabase() {
     } finally {
       loading.current = false
     }
-  }, [])
+  }, [refreshInBackground])
 
   useEffect(() => {
     load()

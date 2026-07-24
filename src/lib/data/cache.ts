@@ -43,3 +43,26 @@ export function clearStoredEtags(): void {
     // non-fatal
   }
 }
+
+const LAST_DOWNLOAD_KEY = 'beatsaver-db:last-download'
+
+/** When the dump was last downloaded (ms epoch), or null if never/unknown. */
+export function getLastDownloadTime(): number | null {
+  try {
+    const val = localStorage.getItem(LAST_DOWNLOAD_KEY)
+    if (!val) return null
+    const parsed = Number(val)
+    return Number.isFinite(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+/** Record that the dump was downloaded now. */
+export function setLastDownloadTime(time: number): void {
+  try {
+    localStorage.setItem(LAST_DOWNLOAD_KEY, String(time))
+  } catch {
+    // non-fatal
+  }
+}

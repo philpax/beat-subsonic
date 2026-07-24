@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { planDataLoad } from '@/hooks/useDatabase'
+import { planDataLoad, isDataStale } from '@/hooks/useDatabase'
 
 describe('planDataLoad', () => {
   it('returns use-cache when data unchanged and DB has songs', () => {
@@ -35,5 +35,23 @@ describe('planDataLoad', () => {
   it('returns skip when data changed but no database', () => {
     const plan = planDataLoad(0, { changed: true })
     expect(plan.action).toBe('skip')
+  })
+})
+
+describe('isDataStale', () => {
+  const DAY = 24 * 60 * 60 * 1000
+  const now = 1_800_000_000_000
+
+  it('is stale when never downloaded', () => {
+    expect(isDataStale(null, now)).toBe(true)
+  })
+
+  it('is fresh within 24h', () => {
+    expect(isDataStale(now - DAY + 1000, now)).toBe(false)
+    expect(isDataStale(now, now)).toBe(false)
+  })
+
+  it('is stale after 24h', () => {
+    expect(isDataStale(now - DAY - 1, now)).toBe(true)
   })
 })
