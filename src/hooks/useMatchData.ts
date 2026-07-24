@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef } from 'react'
 import { getDbClient } from '@/lib/db/client'
+import { getMatchClient, type MatchProgress } from '@/lib/matching/client'
 import {
   buildMapKey,
   buildTrackKey,
-  matchAllTracks,
   computeMatchScore,
   type MapKey,
   type TrackKey,
@@ -31,6 +31,7 @@ export interface MatchState {
   totalTracks: number
   matchedTracks: number
   totalMaps: number
+  progress: MatchProgress | null
 }
 
 const DEFAULT_THRESHOLD = 0.8
@@ -43,23 +44,28 @@ export function useMatchData() {
     totalTracks: 0,
     matchedTracks: 0,
     totalMaps: 0,
+    progress: null,
   })
 
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD)
   const loadingRef = useRef(false)
+  // Cache songs and tracks for score computation after worker returns
+  const songsRef = useRef<SongRow[]>([])
+  const tracksRef = useRef<SubsonicTrackRow[]>([])
+  const mapKeysRef = useRef<MapKey[]>([])
+  const trackKeysRef = useRef<TrackKey[]>([])
 
   const runMatch = useCallback(async (thresh: number = threshold) => {
     if (loadingRef.current) return
     loadingRef.current = true
 
-    setState((s) => ({ ...s, status: 'loading', error: null }))
+    setState((s) => ({ ...s, status: 'loading', error: null, progress: null }))
 
     try {
       const dbClient = getDbClient()
       await dbClient.init()
 
-      // Fetch all BeatSaver songs (we need all of them for matching)
-      // Use a large page size to get everything in one query
+      // Fetch all BeatSaver songs
       const songResult = await dbClient.querySongs({
         page: 1,
         pageSize: 500000,
@@ -67,9 +73,11 @@ export function useMatchData() {
         sortDir: 'desc',
       })
       const songs = songResult.rows as unknown as SongRow[]
+      songsRef.current = songs
 
       // Fetch all Subsonic tracks
       const subsonicTracks = await dbClient.subsonicGetTracks()
+      tracksRef.current = subsonicTracks
 
       if (songs.length === 0 || subsonicTracks.length === 0) {
         setState((s) => ({
@@ -79,11 +87,12 @@ export function useMatchData() {
           totalTracks: subsonicTracks.length,
           matchedTracks: 0,
           totalMaps: songs.length,
+          progress: null,
         }))
         return
       }
 
-      // Build map keys
+      // Build keys for score computation (needed after worker returns)
       const mapKeys: MapKey[] = songs.map((song, index) => ({
         index,
         variants: buildMapKey({
@@ -92,8 +101,6 @@ export function useMatchData() {
           songName: song.song_name,
         }),
       }))
-
-      // Build track keys
       const trackKeys: TrackKey[] = subsonicTracks.map((track, index) => ({
         index,
         variants: buildTrackKey({
@@ -101,9 +108,26 @@ export function useMatchData() {
           title: track.title,
         }),
       }))
+      mapKeysRef.current = mapKeys
+      trackKeysRef.current = trackKeys
 
-      // Run matching
-      const matchResults: MatchResult[] = matchAllTracks(trackKeys, mapKeys, thresh)
+      // Run matching in the worker
+      const matchClient = getMatchClient()
+      const matchResults: MatchResult[] = await matchClient.match(
+        {
+          tracks: subsonicTracks.map((t, i) => ({ index: i, artist: t.artist, title: t.title })),
+          maps: songs.map((s, i) => ({
+            index: i,
+            levelAuthor: s.level_author,
+            songAuthor: s.song_author,
+            songName: s.song_name,
+          })),
+          threshold: thresh,
+        },
+        (progress) => {
+          setState((s) => ({ ...s, progress }))
+        }
+      )
 
       // Build result objects with scores
       const results: TrackWithMatches[] = matchResults.map((mr) => {
@@ -137,12 +161,14 @@ export function useMatchData() {
         totalTracks: subsonicTracks.length,
         matchedTracks: results.length,
         totalMaps: songs.length,
+        progress: null,
       }))
     } catch (err) {
       setState((s) => ({
         ...s,
         status: 'error',
         error: err instanceof Error ? err.message : String(err),
+        progress: null,
       }))
     } finally {
       loadingRef.current = false

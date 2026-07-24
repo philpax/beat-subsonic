@@ -136,6 +136,15 @@ export function MatchView() {
         <span>{coveragePct}% coverage</span>
         <span>·</span>
         <span>{state.totalMaps.toLocaleString()} BeatSaver maps</span>
+        {state.progress && state.status === 'loading' && (
+          <span className="text-primary">
+            · {state.progress.phase === 'building-keys'
+              ? `Building keys: ${state.progress.current.toLocaleString()} / ${state.progress.total.toLocaleString()}`
+              : state.progress.phase === 'matching'
+              ? `Matching: ${state.progress.current.toLocaleString()} / ${state.progress.total.toLocaleString()}`
+              : 'Done'}
+          </span>
+        )}
         {state.error && (
           <span className="flex items-center gap-1 text-destructive">
             <AlertCircle className="h-3 w-3" />

@@ -27,3 +27,5 @@ export type {
   MatchIndex,
   MatchResult,
 } from './matcher'
+export { MatchClient, getMatchClient } from './client'
+export type { MatchWorkerInput, MatchProgress } from './client'

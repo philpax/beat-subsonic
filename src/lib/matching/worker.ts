@@ -1,0 +1,110 @@
+/**
+ * Web Worker for running the matching engine off the main thread.
+ *
+ * Receives tracks + maps, runs matchAllTracks, posts back results.
+ * Posts progress updates during matching.
+ */
+
+import {
+  buildMapKey,
+  buildTrackKey,
+  matchAllTracks,
+  type MapKey,
+  type TrackKey,
+  type MatchResult,
+} from './matcher'
+
+interface MatchWorkerRequest {
+  type: 'match'
+  tracks: { index: number; artist: string; title: string }[]
+  maps: { index: number; levelAuthor: string; songAuthor: string; songName: string }[]
+  threshold: number
+}
+
+interface MatchWorkerProgress {
+  type: 'progress'
+  phase: 'building-keys' | 'matching' | 'done'
+  current: number
+  total: number
+}
+
+interface MatchWorkerResult {
+  type: 'result'
+  results: MatchResult[]
+}
+
+self.onmessage = (event: MessageEvent<MatchWorkerRequest>) => {
+  const { type, tracks, maps, threshold } = event.data
+
+  if (type !== 'match') return
+
+  try {
+    // Phase 1: Build track keys
+    self.postMessage({
+      type: 'progress',
+      phase: 'building-keys',
+      current: 0,
+      total: tracks.length + maps.length,
+    } satisfies MatchWorkerProgress)
+
+    const trackKeys: TrackKey[] = []
+    for (let i = 0; i < tracks.length; i++) {
+      trackKeys.push({
+        index: tracks[i].index,
+        variants: buildTrackKey(tracks[i]),
+      })
+      if (i % 1000 === 0) {
+        self.postMessage({
+          type: 'progress',
+          phase: 'building-keys',
+          current: i,
+          total: tracks.length + maps.length,
+        } satisfies MatchWorkerProgress)
+      }
+    }
+
+    // Phase 2: Build map keys
+    const mapKeys: MapKey[] = []
+    for (let i = 0; i < maps.length; i++) {
+      mapKeys.push({
+        index: maps[i].index,
+        variants: buildMapKey(maps[i]),
+      })
+      if (i % 1000 === 0) {
+        self.postMessage({
+          type: 'progress',
+          phase: 'building-keys',
+          current: tracks.length + i,
+          total: tracks.length + maps.length,
+        } satisfies MatchWorkerProgress)
+      }
+    }
+
+    // Phase 3: Run matching
+    self.postMessage({
+      type: 'progress',
+      phase: 'matching',
+      current: 0,
+      total: tracks.length,
+    } satisfies MatchWorkerProgress)
+
+    const results = matchAllTracks(trackKeys, mapKeys, threshold)
+
+    self.postMessage({
+      type: 'progress',
+      phase: 'done',
+      current: tracks.length,
+      total: tracks.length,
+    } satisfies MatchWorkerProgress)
+
+    self.postMessage({
+      type: 'result',
+      results,
+    } satisfies MatchWorkerResult)
+  } catch (error) {
+    self.postMessage({
+      type: 'error',
+      error: error instanceof Error ? error.message : String(error),
+    })
+  }
+}
