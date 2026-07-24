@@ -212,6 +212,21 @@ export function MatchView({ tagList }: MatchViewProps) {
         )}
       </div>
 
+      {/* Top pagination */}
+      {state.status === 'ready' && total > 0 && (
+        <Pagination
+          edge="top"
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size)
+            setPage(1)
+          }}
+        />
+      )}
+
       {/* Results */}
       <div className="flex-1 overflow-auto">
         {state.status === 'loading' ? (

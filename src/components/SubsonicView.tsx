@@ -178,6 +178,19 @@ export function SubsonicView() {
       {/* Error state */}
       {error && <div className="py-2 px-3 text-sm text-destructive">{String(error)}</div>}
 
+      {/* Top pagination */}
+      <Pagination
+        edge="top"
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size)
+          setPage(1)
+        }}
+      />
+
       {/* Table */}
       <div className="flex-1 overflow-auto" ref={tableContainerRef}>
         <div className="relative">

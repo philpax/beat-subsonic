@@ -130,6 +130,19 @@ export function SongTable({ tagList }: SongTableProps) {
       {/* Error state */}
       {error && <div className="py-2 text-sm text-destructive">{error.message}</div>}
 
+      {/* Top pagination */}
+      <Pagination
+        edge="top"
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size)
+          setPage(1)
+        }}
+      />
+
       {/* Table */}
       <div className="flex-1 overflow-auto" ref={tableContainerRef}>
         <div className="relative">
