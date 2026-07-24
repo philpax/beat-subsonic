@@ -24,4 +24,4 @@ export {
 } from './matcher'
 export type { MapKey, TrackKey, MatchIndex, MatchResult } from './matcher'
 export { MatchClient, getMatchClient } from './client'
-export type { MatchWorkerInput, MatchProgress } from './client'
+export type { MatchProgress, ScoredMatchResult, ScoredMatch } from './client'

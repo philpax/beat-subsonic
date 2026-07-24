@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  collectExactArtistSignatures,
   buildMapKey,
   buildTrackKey,
   buildMatchIndex,
@@ -256,6 +257,36 @@ describe('remix compatibility', () => {
     ]
     const results = matchAllTracks(tracks, maps, 0.8)
     expect(results).toHaveLength(1)
+  })
+})
+
+describe('sharded matching (exactOnlyArtists)', () => {
+  it('collects signatures of artists with exact variant hits', () => {
+    const tracks: TrackKey[] = [
+      makeTrackKey(0, 'Camellia', 'Ghost'),
+      makeTrackKey(1, 'Nobody Known', 'Song'),
+    ]
+    const maps: MapKey[] = [makeMapKey(0, 'Camellia', 'Ghost')]
+    const sigs = collectExactArtistSignatures(tracks, maps)
+    expect(sigs).toEqual(['camellia'])
+  })
+
+  it('skips the fuzzy fallback for artists with exact hits elsewhere', () => {
+    // "Kavinsky" has an exact hit in some OTHER shard; this shard only has
+    // a typo'd variant that the fuzzy fallback would accept (typo'd title
+    // too, so the exact-title fast path cannot reach it either). With the
+    // exact-only hint the fallback must not run, matching the behaviour of
+    // the unpartitioned index (whose exact hit short-circuits it).
+    const tracks: TrackKey[] = [makeTrackKey(0, 'Kavinsky', 'Nightcall')]
+    const shard: MapKey[] = [makeMapKey(0, 'Kavinksy', 'Nightcal')]
+
+    const unhinted = matchAllTracks(tracks, shard, 0.85)
+    expect(unhinted).toHaveLength(1) // fuzzy fallback accepts the typo
+
+    const hinted = matchAllTracks(tracks, shard, 0.85, undefined, 500, {
+      exactOnlyArtists: new Set(['kavinsky']),
+    })
+    expect(hinted).toHaveLength(0)
   })
 })
 

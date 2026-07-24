@@ -384,9 +384,21 @@ interface MatcherContext {
   voteCounts: Int32Array
   /** Scratch list of variant ids touched during a vote count. */
   touched: number[]
+  /**
+   * Artist signatures known to have an exact variant hit SOMEWHERE (e.g.
+   * in another worker's map shard). For these artists the fuzzy fallback
+   * is skipped even without a local exact hit, preserving the exact-hit
+   * short-circuit semantics when the map set is partitioned.
+   */
+  exactOnlyArtists: Set<string> | null
 }
 
-function createContext(index: MatchIndex, maps: MapKey[], threshold: number): MatcherContext {
+function createContext(
+  index: MatchIndex,
+  maps: MapKey[],
+  threshold: number,
+  exactOnlyArtists: Set<string> | null = null,
+): MatcherContext {
   return {
     index,
     maps,
@@ -394,6 +406,7 @@ function createContext(index: MatchIndex, maps: MapKey[], threshold: number): Ma
     resolutions: new Map(),
     voteCounts: new Int32Array(index.artistVariants.length),
     touched: [],
+    exactOnlyArtists,
   }
 }
 
@@ -469,8 +482,13 @@ function artistPairMatches(
  *    the accepted variants' maps become the candidate set. This collapses
  *    the fuzzy artist work from per-(track, map) to per-(artist, variant).
  */
+/** Stable signature for a track's artist (used as the resolution cache key). */
+export function trackArtistSignature(artistVariants: string[]): string {
+  return artistVariants.join('|') // '|' cannot appear in normalized variants
+}
+
 function resolveArtist(ctx: MatcherContext, track: TrackKey): ArtistResolution {
-  const signature = track.artistVariants.join('|') // '|' cannot appear in normalized variants
+  const signature = trackArtistSignature(track.artistVariants)
   let resolution = ctx.resolutions.get(signature)
   if (resolution) return resolution
 
@@ -489,7 +507,14 @@ function resolveArtist(ctx: MatcherContext, track: TrackKey): ArtistResolution {
     }
   }
 
-  // Fallback: trigram vote, then contains/fuzzy check per voted variant
+  // Fallback: trigram vote, then contains/fuzzy check per voted variant.
+  // Skipped when the artist has an exact hit in another shard of a
+  // partitioned map set — the unpartitioned index would never have run it.
+  if (!exactHit && ctx.exactOnlyArtists?.has(signature)) {
+    resolution = { acceptedIds, candidateMaps: [], verdicts: new Map() }
+    ctx.resolutions.set(signature, resolution)
+    return resolution
+  }
   if (!exactHit) {
     const trackMetas = track.artistVariants.map(stringMeta)
     const votedIds = new Set<number>()
@@ -782,19 +807,54 @@ export function matchTrackToMaps(
  * threshold change) skips the index build. */
 const indexCache = new WeakMap<MapKey[], MatchIndex>()
 
+function getOrBuildIndex(maps: MapKey[]): MatchIndex {
+  let index = indexCache.get(maps)
+  if (!index) {
+    index = buildMatchIndex(maps)
+    indexCache.set(maps, index)
+  }
+  return index
+}
+
+/**
+ * The artist signatures of `tracks` that have an exact variant hit in
+ * `maps`. Used when the map set is partitioned across workers: the union
+ * of these across all shards tells each shard which artists must skip the
+ * fuzzy fallback (see MatcherContext.exactOnlyArtists).
+ */
+export function collectExactArtistSignatures(tracks: TrackKey[], maps: MapKey[]): string[] {
+  const index = getOrBuildIndex(maps)
+  const checked = new Set<string>()
+  const hits: string[] = []
+  for (const track of tracks) {
+    const signature = trackArtistSignature(track.artistVariants)
+    if (checked.has(signature)) continue
+    checked.add(signature)
+    for (const variant of track.artistVariants) {
+      if (index.artistVariantIds.has(variant)) {
+        hits.push(signature)
+        break
+      }
+    }
+  }
+  return hits
+}
+
+export interface MatchOptions {
+  /** See MatcherContext.exactOnlyArtists. */
+  exactOnlyArtists?: Set<string>
+}
+
 export function matchAllTracks(
   tracks: TrackKey[],
   maps: MapKey[],
   threshold: number,
   onProgress?: (current: number, total: number) => void,
   progressInterval: number = 500,
+  options?: MatchOptions,
 ): MatchResult[] {
-  let index = indexCache.get(maps)
-  if (!index) {
-    index = buildMatchIndex(maps)
-    indexCache.set(maps, index)
-  }
-  const ctx = createContext(index, maps, threshold)
+  const index = getOrBuildIndex(maps)
+  const ctx = createContext(index, maps, threshold, options?.exactOnlyArtists ?? null)
 
   const results: MatchResult[] = []
 

@@ -1,14 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { getDbClient } from '@/lib/db/client'
 import { getMatchClient, type MatchProgress } from '@/lib/matching/client'
-import {
-  buildMapKey,
-  buildTrackKey,
-  computeMatchScore,
-  type MapKey,
-  type TrackKey,
-  type MatchResult,
-} from '@/lib/matching'
 import type { SongRow } from '@/lib/types'
 import type { SubsonicTrackRow } from '@/lib/subsonic/db'
 
@@ -56,11 +48,10 @@ export function useMatchData() {
 
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD)
   const loadingRef = useRef(false)
-  // Cache songs and tracks for score computation after worker returns
+  // Songs cached for result display; the version tracks which map set the
+  // worker currently holds so unchanged data is never re-shipped
   const songsRef = useRef<SongRow[]>([])
-  const tracksRef = useRef<SubsonicTrackRow[]>([])
-  const mapKeysRef = useRef<MapKey[]>([])
-  const trackKeysRef = useRef<TrackKey[]>([])
+  const songsVersionRef = useRef<string | null>(null)
 
   // Load counts on mount so the idle state can show accurate numbers
   useEffect(() => {
@@ -92,14 +83,35 @@ export function useMatchData() {
         const dbClient = getDbClient()
         await dbClient.init()
 
-        // Fetch all BeatSaver songs (querySongs is paginated and caps
-        // pageSize at 500 — matching needs the full, unpaginated set)
-        const songs = (await dbClient.getAllSongs()) as unknown as SongRow[]
-        songsRef.current = songs
+        const matchClient = getMatchClient()
+        const onProgress = (progress: MatchProgress) => {
+          setState((s) => ({ ...s, progress }))
+        }
+
+        // Ship the map set to the worker only when the data has changed;
+        // the worker keeps its keys + index between matches. getAllSongs is
+        // used because querySongs is paginated (pageSize capped at 500).
+        const stats = await dbClient.getStats()
+        const version = `${stats.songCount}:${stats.scrapeTime}`
+        if (songsVersionRef.current !== version || !matchClient.hasMaps(version)) {
+          const songs = (await dbClient.getAllSongs()) as unknown as SongRow[]
+          songsRef.current = songs
+          await matchClient.setMaps(
+            version,
+            songs.map((s, i) => ({
+              index: i,
+              levelAuthor: s.level_author,
+              songAuthor: s.song_author,
+              songName: s.song_name,
+            })),
+            onProgress,
+          )
+          songsVersionRef.current = version
+        }
+        const songs = songsRef.current
 
         // Fetch all Subsonic tracks
         const subsonicTracks = await dbClient.subsonicGetTracks()
-        tracksRef.current = subsonicTracks
 
         if (songs.length === 0 || subsonicTracks.length === 0) {
           setState((s) => ({
@@ -114,41 +126,11 @@ export function useMatchData() {
           return
         }
 
-        // Build keys for score computation (needed after worker returns)
-        const mapKeys: MapKey[] = songs.map((song, index) => ({
-          index,
-          ...buildMapKey({
-            levelAuthor: song.level_author,
-            songAuthor: song.song_author,
-            songName: song.song_name,
-          }),
-        }))
-        const trackKeys: TrackKey[] = subsonicTracks.map((track, index) => ({
-          index,
-          ...buildTrackKey({
-            artist: track.artist,
-            title: track.title,
-          }),
-        }))
-        mapKeysRef.current = mapKeys
-        trackKeysRef.current = trackKeys
-
-        // Run matching in the worker
-        const matchClient = getMatchClient()
-        const matchResults: MatchResult[] = await matchClient.match(
-          {
-            tracks: subsonicTracks.map((t, i) => ({ index: i, artist: t.artist, title: t.title })),
-            maps: songs.map((s, i) => ({
-              index: i,
-              levelAuthor: s.level_author,
-              songAuthor: s.song_author,
-              songName: s.song_name,
-            })),
-            threshold: thresh,
-          },
-          (progress) => {
-            setState((s) => ({ ...s, progress }))
-          },
+        // Run matching in the worker — scores come back attached
+        const matchResults = await matchClient.match(
+          subsonicTracks.map((t, i) => ({ index: i, artist: t.artist, title: t.title })),
+          thresh,
+          onProgress,
         )
 
         // Group matched tracks by case-insensitive (artist, title) — the
@@ -167,9 +149,8 @@ export function useMatchData() {
           }
           group.instances.push(track)
 
-          for (const mapIdx of mr.mapIndices) {
-            const song = songs[mapIdx]
-            const score = computeMatchScore(trackKeys[mr.trackIndex], mapKeys[mapIdx])
+          for (const { mapIndex, score } of mr.matches) {
+            const song = songs[mapIndex]
             const existing = group.matches.find((m) => m.song.map_id === song.map_id)
             if (existing) {
               if (score > existing.score) existing.score = score
