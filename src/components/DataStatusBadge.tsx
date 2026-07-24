@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Clock, Database } from 'lucide-react'
+import { formatIsoDate } from '@/components/table-shared'
 
 interface DataStatusBadgeProps {
   scrapeTime: number | null
@@ -8,11 +9,7 @@ interface DataStatusBadgeProps {
 
 export function DataStatusBadge({ scrapeTime, songCount }: DataStatusBadgeProps) {
   const formattedTime = scrapeTime
-    ? new Date(scrapeTime * 1000).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      })
+    ? formatIsoDate(scrapeTime)
     : 'Unknown'
 
   return (

@@ -24,6 +24,7 @@ import {
   DifficultyBadge,
   ModBadges,
 } from '@/components/Badges'
+import { formatDuration, formatIsoDateTime } from '@/components/table-shared'
 import { getDbClient } from '@/lib/db/client'
 import type { SongRow, DifficultyRow } from '@/lib/types'
 
@@ -93,11 +94,7 @@ export function SongDetailDialog({ song, tagList, onClose }: SongDetailDialogPro
             <MetaItem label="Downvotes" value={song.downvotes.toLocaleString()} mono />
             <MetaItem
               label="Uploaded"
-              value={new Date(song.upload_time * 1000).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-              })}
+              value={formatIsoDateTime(song.upload_time)}
             />
             <MetaItem label="Uploader" value={song.uploader_name} />
           </div>
@@ -166,8 +163,4 @@ function MetaItem({ label, value, mono }: { label: string; value: string; mono?:
   )
 }
 
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
+

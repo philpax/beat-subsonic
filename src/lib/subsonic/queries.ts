@@ -44,7 +44,7 @@ export function buildSubsonicQuery(query: SubsonicQuery): SubsonicBuiltQuery {
   const offset = (page - 1) * pageSize
 
   const sortColumn = getSubsonicSortColumn(sortKey)
-  const sql = `SELECT id, title, artist, album, duration, year, normalized_key FROM subsonic_tracks${where} ORDER BY ${sortColumn} ${sortDir} LIMIT ? OFFSET ?`
+  const sql = `SELECT id, title, artist, album, duration, year, fetched_at, normalized_key FROM subsonic_tracks${where} ORDER BY ${sortColumn} ${sortDir} LIMIT ? OFFSET ?`
   return { sql, params: [...params, pageSize, offset] }
 }
 

@@ -12,7 +12,7 @@ import { usePersistentState } from '@/hooks/usePersistentState'
 import { FilterPanel } from '@/components/FilterPanel'
 import { SortControl } from '@/components/SortControl'
 import { SongDetailDialog } from '@/components/SongDetailDialog'
-import { SortHeader, Pagination, formatDuration } from '@/components/table-shared'
+import { SortHeader, Pagination, formatDuration, formatIsoDate } from '@/components/table-shared'
 import { buildOneClickUrl } from '@/lib/types'
 import type { SongFilters, SortKey } from '@/lib/db/queries'
 import {
@@ -132,7 +132,7 @@ export function SongTable({ tagList }: SongTableProps) {
 
       {/* Error state */}
       {error && (
-        <div className="py-2 text-sm text-destructive">{error}</div>
+        <div className="py-2 text-sm text-destructive">{error.message}</div>
       )}
 
       {/* Table */}
@@ -208,11 +208,7 @@ export function SongTable({ tagList }: SongTableProps) {
                       </div>
                     </div>
                     <div className="w-24 shrink-0 px-2 font-mono text-xs text-muted-foreground">
-                      {new Date(song.upload_time * 1000).toLocaleDateString('en-US', {
-                        year: '2-digit',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
+                      {formatIsoDate(song.upload_time)}
                     </div>
                     <div className="w-20 shrink-0 px-2" onClick={(e) => e.stopPropagation()}>
                       <button

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { useSubsonic } from '@/hooks/useSubsonic'
 import { useSubsonicQuery } from '@/hooks/useSubsonicQuery'
 import { usePersistentState } from '@/hooks/usePersistentState'
-import { SortHeader, Pagination, formatDuration } from '@/components/table-shared'
+import { SortHeader, Pagination, formatDuration, formatIsoDateTimeMs } from '@/components/table-shared'
 import type { SubsonicSortKey } from '@/lib/subsonic/queries'
 import {
   RefreshCw,
@@ -74,13 +74,7 @@ export function SubsonicView() {
   }, [sort])
 
   const fetchedDate = state.stats?.fetchedAt
-    ? new Date(state.stats.fetchedAt).toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
+    ? formatIsoDateTimeMs(state.stats.fetchedAt)
     : null
 
   return (
@@ -202,7 +196,7 @@ export function SubsonicView() {
 
       {/* Error state */}
       {error && (
-        <div className="py-2 px-3 text-sm text-destructive">{error}</div>
+        <div className="py-2 px-3 text-sm text-destructive">{String(error)}</div>
       )}
 
       {/* Table */}
@@ -211,10 +205,11 @@ export function SubsonicView() {
           {/* Header */}
           <div className="sticky top-0 z-10 flex border-b bg-background">
             <SortHeader label="Title" sortKey="title" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="flex-1" />
-            <SortHeader label="Artist" sortKey="artist" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-48 shrink-0" />
-            <SortHeader label="Album" sortKey="album" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-48 shrink-0" />
+            <SortHeader label="Artist" sortKey="artist" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-44 shrink-0" />
+            <SortHeader label="Album" sortKey="album" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-44 shrink-0" />
             <SortHeader label="Dur" sortKey="duration" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-12 shrink-0" />
             <SortHeader label="Year" sortKey="year" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-14 shrink-0" />
+            <div className="w-28 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Added</div>
           </div>
 
           {/* Virtual rows */}
@@ -250,17 +245,20 @@ export function SubsonicView() {
                     <div className="flex-1 truncate px-3 text-sm font-medium">
                       {track.title as string}
                     </div>
-                    <div className="w-48 shrink-0 truncate px-3 text-xs text-muted-foreground">
+                    <div className="w-44 shrink-0 truncate px-2 text-xs text-muted-foreground">
                       {track.artist as string}
                     </div>
-                    <div className="w-48 shrink-0 truncate px-3 text-xs text-muted-foreground">
+                    <div className="w-44 shrink-0 truncate px-2 text-xs text-muted-foreground">
                       {(track.album as string) ?? '—'}
                     </div>
-                    <div className="w-12 shrink-0 px-3 font-mono text-sm text-muted-foreground">
+                    <div className="w-12 shrink-0 px-2 font-mono text-sm text-muted-foreground">
                       {track.duration ? formatDuration(track.duration as number) : '—'}
                     </div>
-                    <div className="w-14 shrink-0 px-3 font-mono text-sm text-muted-foreground">
+                    <div className="w-14 shrink-0 px-2 font-mono text-sm text-muted-foreground">
                       {(track.year as number) ?? '—'}
+                    </div>
+                    <div className="w-28 shrink-0 px-2 font-mono text-xs text-muted-foreground">
+                      {track.fetched_at ? formatIsoDateTimeMs(track.fetched_at as number).slice(0, 10) : '—'}
                     </div>
                   </div>
                 )

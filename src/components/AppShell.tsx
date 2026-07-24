@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Moon, Sun } from 'lucide-react'
+import { formatIsoDate } from '@/components/table-shared'
 
 interface AppShellProps {
   children: ReactNode
@@ -20,11 +21,7 @@ export function AppShell({
   onToggleTheme,
 }: AppShellProps) {
   const scrapeDate = scrapeTime
-    ? new Date(scrapeTime * 1000).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
+    ? formatIsoDate(scrapeTime)
     : null
 
   return (
