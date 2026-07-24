@@ -11,7 +11,7 @@ describe('parseSearch3Response', () => {
       'subsonic-response': {
         status: 'ok',
         version: '1.16.1',
-        body: {
+        searchResult3: {
           artist: [{ id: '1', name: 'Artist', albumCount: 5 }],
           album: [{ id: '10', name: 'Album', songCount: 10, duration: 600 }],
           song: [
@@ -37,7 +37,7 @@ describe('parseSearch3Response', () => {
       'subsonic-response': {
         status: 'ok',
         version: '1.16.1',
-        body: {},
+        searchResult3: {},
       },
     }
 
@@ -47,7 +47,7 @@ describe('parseSearch3Response', () => {
     expect(result.song).toEqual([])
   })
 
-  it('handles missing body', () => {
+  it('handles missing searchResult3', () => {
     const raw = {
       'subsonic-response': {
         status: 'ok',

@@ -19,7 +19,7 @@ function makeSearch3Response(songs: Child[]) {
     'subsonic-response': {
       status: 'ok',
       version: '1.16.1',
-      body: {
+      searchResult3: {
         artist: [],
         album: [],
         song: songs,

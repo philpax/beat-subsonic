@@ -14,7 +14,8 @@ export interface SubsonicResponse<T = unknown> {
     serverVersion?: string
     openSubsonic?: boolean
     error?: SubsonicError
-    body?: T
+    /** The search3 endpoint returns results under 'searchResult3'. */
+    searchResult3?: T
   }
 }
 
@@ -112,11 +113,11 @@ export interface Search3Response {
 /** Parse a raw JSON response into a Search3Response, defaulting empty arrays. */
 export function parseSearch3Response(raw: unknown): Search3Response {
   const wrapper = raw as SubsonicResponse<Search3Response>
-  const body = (wrapper['subsonic-response']?.body ?? {}) as Partial<Search3Response>
+  const result = wrapper['subsonic-response']?.searchResult3
   return {
-    artist: body.artist ?? [],
-    album: body.album ?? [],
-    song: body.song ?? [],
+    artist: result?.artist ?? [],
+    album: result?.album ?? [],
+    song: result?.song ?? [],
   }
 }
 
