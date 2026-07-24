@@ -11,7 +11,7 @@ const queryClient = new QueryClient({
       // Data is local SQLite — it doesn't change unless we change it.
       // Keep cached data around for a long time so tab switches are instant.
       staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30,   // 30 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes
       refetchOnWindowFocus: false,
     },
   },

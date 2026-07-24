@@ -52,7 +52,7 @@ function DropdownMenuContent({
     <div
       className={cn(
         'absolute right-0 top-full mt-1 z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md',
-        className
+        className,
       )}
       onClick={() => setOpen(false)}
     >
@@ -74,7 +74,7 @@ function DropdownMenuItem({
     <div
       className={cn(
         'relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground',
-        className
+        className,
       )}
       onClick={onClick}
     >

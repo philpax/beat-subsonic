@@ -5,10 +5,7 @@
  * functions in auth.ts and types.ts. This class only handles fetch() calls.
  */
 
-import {
-  buildAuthParams,
-  buildSubsonicUrl,
-} from './auth'
+import { buildAuthParams, buildSubsonicUrl } from './auth'
 import {
   type Child,
   type Search3Request,
@@ -70,9 +67,7 @@ export class SubsonicClient {
    * Uses empty query with large songCount, incrementing songOffset.
    * This is the blackbird pattern (avoids unnecessary artist/album data).
    */
-  async fetchAllTracks(
-    onProgress?: (fetched: number, total: number) => void
-  ): Promise<Child[]> {
+  async fetchAllTracks(onProgress?: (fetched: number, total: number) => void): Promise<Child[]> {
     const allTracks: Child[] = []
     let offset = 0
 

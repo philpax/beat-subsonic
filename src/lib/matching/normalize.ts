@@ -380,7 +380,8 @@ const MAPPER_CREDIT_PAREN =
   /[([{][^()[\]{}]*\b(?:beatmapp?e?d?|mapp?e?d?|charte?d?|edit(?:ed)?|remapp?e?d?)\s+by\b[^()[\]{}]*[)\]}]/gi
 
 /** A segment that is purely a mapper credit, e.g. "beatmap by kieve", "Edit by Barudaq". */
-const MAPPER_CREDIT_SEGMENT = /^\s*(?:beatmapp?e?d?|mapp?e?d?|charte?d?|edit(?:ed)?|remapp?e?d?)\s+by\b/i
+const MAPPER_CREDIT_SEGMENT =
+  /^\s*(?:beatmapp?e?d?|mapp?e?d?|charte?d?|edit(?:ed)?|remapp?e?d?)\s+by\b/i
 
 /** Hard separators between unrelated credits: "|", "//", ";". */
 const HARD_SEPARATOR = /\s*(?:\|+|\/\/+|;)\s*/

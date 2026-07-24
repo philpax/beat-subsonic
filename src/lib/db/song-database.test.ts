@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  songToBindParams,
-  difficultyToBindParams,
-  buildMetaEntries,
-} from '@/lib/db/song-database'
+import { songToBindParams, difficultyToBindParams, buildMetaEntries } from '@/lib/db/song-database'
 import type { ParsedSong, ParsedDifficulty, ParsedDatabase } from '@/lib/proto/schema'
 
 function makeSong(overrides: Partial<ParsedSong> = {}): ParsedSong {
@@ -51,23 +47,23 @@ describe('songToBindParams', () => {
     const params = songToBindParams(song, 1700000100)
 
     expect(params).toHaveLength(18)
-    expect(params[0]).toBe(31)        // map_id
-    expect(params[1]).toBe('1f')      // key
+    expect(params[0]).toBe(31) // map_id
+    expect(params[1]).toBe('1f') // key
     expect(params[2]).toBe('abcdef1234567890abcdef1234567890abcdef12') // hash
-    expect(params[3]).toBe(120.5)     // bpm
-    expect(params[4]).toBe(10)        // upvotes
-    expect(params[5]).toBe(5)         // downvotes
-    expect(params[6]).toBe(0.625)      // rating
+    expect(params[3]).toBe(120.5) // bpm
+    expect(params[4]).toBe(10) // upvotes
+    expect(params[5]).toBe(5) // downvotes
+    expect(params[6]).toBe(0.625) // rating
     expect(params[7]).toBe(1700000000) // upload_time
-    expect(params[8]).toBe(180)       // duration
+    expect(params[8]).toBe(180) // duration
     expect(params[9]).toBe('Test Song') // song_name
     expect(params[10]).toBe('Test Artist') // song_author
     expect(params[11]).toBe('Test Mapper') // level_author
     expect(params[12]).toBe('Test Mapper') // uploader_name
-    expect(params[13]).toBe(1)        // ranked_states
-    expect(params[14]).toBe(0)        // ranked_change_time
-    expect(params[15]).toBe(0)        // tags
-    expect(params[16]).toBe(1)        // upload_flags
+    expect(params[13]).toBe(1) // ranked_states
+    expect(params[14]).toBe(0) // ranked_change_time
+    expect(params[15]).toBe(0) // tags
+    expect(params[16]).toBe(1) // upload_flags
     expect(params[17]).toBe(1700000100) // scrape_ended_time
   })
 
@@ -84,16 +80,16 @@ describe('difficultyToBindParams', () => {
     const params = difficultyToBindParams(diff)
 
     expect(params).toHaveLength(10)
-    expect(params[0]).toBe(31)    // song_map_id
-    expect(params[1]).toBe(1)     // characteristic
-    expect(params[2]).toBe(4)     // difficulty
-    expect(params[3]).toBe(7.0)   // stars_ss
-    expect(params[4]).toBe(6.5)   // stars_bl
-    expect(params[5]).toBe(16.0)  // njs
-    expect(params[6]).toBe(5)     // bombs
-    expect(params[7]).toBe(300)   // notes
-    expect(params[8]).toBe(50)    // obstacles
-    expect(params[9]).toBe(4)     // mods
+    expect(params[0]).toBe(31) // song_map_id
+    expect(params[1]).toBe(1) // characteristic
+    expect(params[2]).toBe(4) // difficulty
+    expect(params[3]).toBe(7.0) // stars_ss
+    expect(params[4]).toBe(6.5) // stars_bl
+    expect(params[5]).toBe(16.0) // njs
+    expect(params[6]).toBe(5) // bombs
+    expect(params[7]).toBe(300) // notes
+    expect(params[8]).toBe(50) // obstacles
+    expect(params[9]).toBe(4) // mods
   })
 })
 

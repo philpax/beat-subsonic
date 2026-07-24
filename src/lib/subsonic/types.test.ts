@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  parseSearch3Response,
-  isSubsonicResponseOk,
-  getSubsonicError,
-} from './types'
+import { parseSearch3Response, isSubsonicResponseOk, getSubsonicError } from './types'
 
 describe('parseSearch3Response', () => {
   it('parses a full search3 response', () => {

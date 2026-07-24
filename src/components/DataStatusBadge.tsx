@@ -8,9 +8,7 @@ interface DataStatusBadgeProps {
 }
 
 export function DataStatusBadge({ scrapeTime, songCount }: DataStatusBadgeProps) {
-  const formattedTime = scrapeTime
-    ? formatIsoDate(scrapeTime)
-    : 'Unknown'
+  const formattedTime = scrapeTime ? formatIsoDate(scrapeTime) : 'Unknown'
 
   return (
     <div className="flex items-center gap-2">

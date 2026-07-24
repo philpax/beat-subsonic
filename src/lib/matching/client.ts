@@ -44,7 +44,7 @@ export class MatchClient {
 
   async match(
     input: MatchWorkerInput,
-    onProgress?: (progress: MatchProgress) => void
+    onProgress?: (progress: MatchProgress) => void,
   ): Promise<MatchResult[]> {
     this.progressCallback = onProgress ?? null
     this.terminate()
@@ -75,13 +75,10 @@ export class MatchClient {
     totalPartitions: number,
     tracks: MatchWorkerInput['tracks'],
     maps: MatchWorkerInput['maps'],
-    threshold: number
+    threshold: number,
   ): Promise<MatchResult[]> {
     return new Promise((resolve, reject) => {
-      const worker = new Worker(
-        new URL('./worker.ts', import.meta.url),
-        { type: 'module' }
-      )
+      const worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })
 
       const state: WorkerState = {
         worker,

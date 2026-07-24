@@ -5,16 +5,14 @@ import { Input } from '@/components/ui/input'
 import { useSubsonic } from '@/hooks/useSubsonic'
 import { useSubsonicQuery } from '@/hooks/useSubsonicQuery'
 import { usePersistentState } from '@/hooks/usePersistentState'
-import { SortHeader, Pagination, formatDuration, formatIsoDateTimeMs } from '@/components/table-shared'
-import type { SubsonicSortKey } from '@/lib/subsonic/queries'
 import {
-  RefreshCw,
-  Search,
-  Music,
-  CheckCircle2,
-  Loader2,
-  AlertCircle,
-} from 'lucide-react'
+  SortHeader,
+  Pagination,
+  formatDuration,
+  formatIsoDateTimeMs,
+} from '@/components/table-shared'
+import type { SubsonicSortKey } from '@/lib/subsonic/queries'
+import { RefreshCw, Search, Music, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
 
 const PAGE_SIZE_DEFAULT = 100
 
@@ -64,18 +62,19 @@ export function SubsonicView() {
     overscan: 10,
   })
 
-  const handleSortClick = useCallback((key: SubsonicSortKey) => {
-    if (sort === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSort(key)
-      setSortDir('asc')
-    }
-  }, [sort])
+  const handleSortClick = useCallback(
+    (key: SubsonicSortKey) => {
+      if (sort === key) {
+        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+      } else {
+        setSort(key)
+        setSortDir('asc')
+      }
+    },
+    [sort],
+  )
 
-  const fetchedDate = state.stats?.fetchedAt
-    ? formatIsoDateTimeMs(state.stats.fetchedAt)
-    : null
+  const fetchedDate = state.stats?.fetchedAt ? formatIsoDateTimeMs(state.stats.fetchedAt) : null
 
   return (
     <div className="flex h-full flex-col">
@@ -89,9 +88,7 @@ export function SubsonicView() {
             <Input
               placeholder="https://music.example.com"
               value={state.credentials.baseUrl}
-              onChange={(e) =>
-                updateCredentials({ ...state.credentials, baseUrl: e.target.value })
-              }
+              onChange={(e) => updateCredentials({ ...state.credentials, baseUrl: e.target.value })}
               className="h-8 text-sm"
             />
           </div>
@@ -183,21 +180,56 @@ export function SubsonicView() {
       </div>
 
       {/* Error state */}
-      {error && (
-        <div className="py-2 px-3 text-sm text-destructive">{String(error)}</div>
-      )}
+      {error && <div className="py-2 px-3 text-sm text-destructive">{String(error)}</div>}
 
       {/* Table */}
       <div className="flex-1 overflow-auto" ref={tableContainerRef}>
         <div className="relative">
           {/* Header */}
           <div className="sticky top-0 z-10 flex border-b bg-background">
-            <SortHeader label="Title" sortKey="title" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="flex-1" />
-            <SortHeader label="Artist" sortKey="artist" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-44 shrink-0" />
-            <SortHeader label="Album" sortKey="album" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-44 shrink-0" />
-            <SortHeader label="Dur" sortKey="duration" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-12 shrink-0" />
-            <SortHeader label="Year" sortKey="year" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-14 shrink-0" />
-            <div className="w-28 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Added</div>
+            <SortHeader
+              label="Title"
+              sortKey="title"
+              currentSort={sort}
+              sortDir={sortDir}
+              onClick={handleSortClick}
+              className="flex-1"
+            />
+            <SortHeader
+              label="Artist"
+              sortKey="artist"
+              currentSort={sort}
+              sortDir={sortDir}
+              onClick={handleSortClick}
+              className="w-44 shrink-0"
+            />
+            <SortHeader
+              label="Album"
+              sortKey="album"
+              currentSort={sort}
+              sortDir={sortDir}
+              onClick={handleSortClick}
+              className="w-44 shrink-0"
+            />
+            <SortHeader
+              label="Dur"
+              sortKey="duration"
+              currentSort={sort}
+              sortDir={sortDir}
+              onClick={handleSortClick}
+              className="w-12 shrink-0"
+            />
+            <SortHeader
+              label="Year"
+              sortKey="year"
+              currentSort={sort}
+              sortDir={sortDir}
+              onClick={handleSortClick}
+              className="w-14 shrink-0"
+            />
+            <div className="w-28 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              Added
+            </div>
           </div>
 
           {/* Virtual rows */}
@@ -210,9 +242,7 @@ export function SubsonicView() {
                 : 'No tracks match your search.'}
             </div>
           ) : (
-            <div
-              style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}
-            >
+            <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
               {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                 const track = tracks[virtualRow.index]
                 if (!track) return null
@@ -246,7 +276,9 @@ export function SubsonicView() {
                       {(track.year as number) ?? '—'}
                     </div>
                     <div className="w-28 shrink-0 px-2 font-mono text-xs text-muted-foreground">
-                      {track.fetched_at ? formatIsoDateTimeMs(track.fetched_at as number).slice(0, 10) : '—'}
+                      {track.fetched_at
+                        ? formatIsoDateTimeMs(track.fetched_at as number).slice(0, 10)
+                        : '—'}
                     </div>
                   </div>
                 )
@@ -262,7 +294,10 @@ export function SubsonicView() {
         page={page}
         pageSize={pageSize}
         onPageChange={setPage}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1) }}
+        onPageSizeChange={(size) => {
+          setPageSize(size)
+          setPage(1)
+        }}
       />
     </div>
   )

@@ -51,7 +51,7 @@ const TooltipContent = ({
     <div
       className={cn(
         'absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md border bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md',
-        className
+        className,
       )}
     >
       {children}

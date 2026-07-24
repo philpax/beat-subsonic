@@ -32,7 +32,7 @@ export function TabLayout({ children }: TabLayoutProps) {
               'relative px-4 py-2 text-sm font-medium transition-colors',
               location === tab.path
                 ? 'text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           >
             {tab.label}

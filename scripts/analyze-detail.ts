@@ -1,12 +1,29 @@
 import { readFileSync } from 'node:fs'
-import { buildMapKey, buildTrackKey, matchAllTracks, computeMatchScore, type MapKey, type TrackKey } from '../src/lib/matching/matcher'
+import {
+  buildMapKey,
+  buildTrackKey,
+  matchAllTracks,
+  computeMatchScore,
+  type MapKey,
+  type TrackKey,
+} from '../src/lib/matching/matcher'
 
 function main() {
   const songs = JSON.parse(readFileSync('tmp/beatsaver-songs.json', 'utf-8'))
   const tracks = JSON.parse(readFileSync('tmp/subsonic-tracks.json', 'utf-8'))
 
-  const mapKeys: MapKey[] = songs.map((s: any, i: number) => ({ index: i, ...buildMapKey({ levelAuthor: s.level_author, songAuthor: s.song_author, songName: s.song_name }) }))
-  const trackKeys: TrackKey[] = tracks.map((t: any, i: number) => ({ index: i, ...buildTrackKey({ artist: t.artist, title: t.title }) }))
+  const mapKeys: MapKey[] = songs.map((s: any, i: number) => ({
+    index: i,
+    ...buildMapKey({
+      levelAuthor: s.level_author,
+      songAuthor: s.song_author,
+      songName: s.song_name,
+    }),
+  }))
+  const trackKeys: TrackKey[] = tracks.map((t: any, i: number) => ({
+    index: i,
+    ...buildTrackKey({ artist: t.artist, title: t.title }),
+  }))
 
   console.log('Matching...')
   const t0 = Date.now()
@@ -36,7 +53,9 @@ function main() {
     for (const mapIdx of r.mapIndices.slice(0, 5)) {
       const song = songs[mapIdx]
       const score = computeMatchScore(trackKeys[r.trackIndex], mapKeys[mapIdx])
-      console.log(`    [${(score * 100).toFixed(0)}%] "${song.song_name}" by ${song.song_author} (mapper: ${song.level_author})`)
+      console.log(
+        `    [${(score * 100).toFixed(0)}%] "${song.song_name}" by ${song.song_author} (mapper: ${song.level_author})`,
+      )
     }
     if (r.mapIndices.length > 5) console.log(`    ... and ${r.mapIndices.length - 5} more`)
   }
@@ -51,7 +70,9 @@ function main() {
       const score = computeMatchScore(trackKeys[r.trackIndex], mapKeys[mapIdx])
       if (score >= 0.8 && score < 0.86) {
         const song = songs[mapIdx]
-        console.log(`  [${(score * 100).toFixed(0)}%] "${track.title}" by ${track.artist} → "${song.song_name}" by ${song.song_author} (mapper: ${song.level_author})`)
+        console.log(
+          `  [${(score * 100).toFixed(0)}%] "${track.title}" by ${track.artist} → "${song.song_name}" by ${song.song_author} (mapper: ${song.level_author})`,
+        )
         shown++
         if (shown >= 20) break
       }

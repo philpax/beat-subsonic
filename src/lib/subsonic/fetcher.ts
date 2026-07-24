@@ -16,7 +16,7 @@ export interface SubsonicFetchResult {
  */
 export async function fetchAllSubsonicData(
   client: SubsonicClient,
-  onProgress?: (fetched: number, total: number) => void
+  onProgress?: (fetched: number, total: number) => void,
 ): Promise<SubsonicFetchResult> {
   const tracks = await client.fetchAllTracks(onProgress)
   return {

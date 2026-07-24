@@ -1,9 +1,5 @@
 import { Button } from '@/components/ui/button'
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { buildOneClickUrl, buildMapPageUrl, buildDownloadUrl } from '@/lib/types'
 import { Download, ExternalLink, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -25,7 +21,7 @@ export function OneClickButton({
 
   const linkClass = cn(
     'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-xs font-medium transition-colors border border-border bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground',
-    size === 'sm' ? 'h-7 px-2.5' : 'h-8 px-3'
+    size === 'sm' ? 'h-7 px-2.5' : 'h-8 px-3',
   )
 
   return (

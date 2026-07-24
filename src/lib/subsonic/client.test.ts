@@ -51,13 +51,14 @@ describe('SubsonicClient', () => {
 
     it('throws on failed response', async () => {
       globalThis.fetch = vi.fn().mockResolvedValue({
-        json: () => Promise.resolve({
-          'subsonic-response': {
-            status: 'failed',
-            version: '1.16.1',
-            error: { code: 40, message: 'Wrong username or password' },
-          },
-        }),
+        json: () =>
+          Promise.resolve({
+            'subsonic-response': {
+              status: 'failed',
+              version: '1.16.1',
+              error: { code: 40, message: 'Wrong username or password' },
+            },
+          }),
       }) as any
 
       const client = new SubsonicClient('https://example.com', 'user', 'pass')

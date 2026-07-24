@@ -64,43 +64,48 @@ function decodeDifficulty(bytes: Uint8Array): SongDifficultyProto {
     obstacles: 0,
     mods: 0,
   }
-  decodeMessage(bytes, (fieldNumber, wireType, reader) => {
-    switch (fieldNumber) {
-      case 1: // characteristic (uint32)
-        diff.characteristic = reader.readVarint()
-        break
-      case 2: // difficulty (uint32)
-        diff.difficulty = reader.readVarint()
-        break
-      case 3: // unused / reserved
-        reader.skipField(wireType)
-        break
-      case 4: // starsT100 (uint32)
-        diff.starsT100 = reader.readVarint()
-        break
-      case 5: // starsT100BL (uint32)
-        diff.starsT100BL = reader.readVarint()
-        break
-      case 6: // njsT100 (uint32)
-        diff.njsT100 = reader.readVarint()
-        break
-      case 7: // bombs (uint32)
-        diff.bombs = reader.readVarint()
-        break
-      case 8: // notes (uint32)
-        diff.notes = reader.readVarint()
-        break
-      case 9: // obstacles (uint32)
-        diff.obstacles = reader.readVarint()
-        break
-      case 10: // mods (uint32 flags)
-        diff.mods = reader.readVarint()
-        break
-      default:
-        reader.skipField(wireType)
-        break
-    }
-  }, 0, bytes.length)
+  decodeMessage(
+    bytes,
+    (fieldNumber, wireType, reader) => {
+      switch (fieldNumber) {
+        case 1: // characteristic (uint32)
+          diff.characteristic = reader.readVarint()
+          break
+        case 2: // difficulty (uint32)
+          diff.difficulty = reader.readVarint()
+          break
+        case 3: // unused / reserved
+          reader.skipField(wireType)
+          break
+        case 4: // starsT100 (uint32)
+          diff.starsT100 = reader.readVarint()
+          break
+        case 5: // starsT100BL (uint32)
+          diff.starsT100BL = reader.readVarint()
+          break
+        case 6: // njsT100 (uint32)
+          diff.njsT100 = reader.readVarint()
+          break
+        case 7: // bombs (uint32)
+          diff.bombs = reader.readVarint()
+          break
+        case 8: // notes (uint32)
+          diff.notes = reader.readVarint()
+          break
+        case 9: // obstacles (uint32)
+          diff.obstacles = reader.readVarint()
+          break
+        case 10: // mods (uint32 flags)
+          diff.mods = reader.readVarint()
+          break
+        default:
+          reader.skipField(wireType)
+          break
+      }
+    },
+    0,
+    bytes.length,
+  )
   return diff
 }
 
@@ -124,58 +129,63 @@ function decodeSong(bytes: Uint8Array): SongProto {
     uploadFlags: 0,
   }
 
-  decodeMessage(bytes, (fieldNumber, wireType, reader) => {
-    switch (fieldNumber) {
-      case 1: // bpm (float, wire type 5 = fixed32)
-        song.bpm = reader.readFloat()
-        break
-      case 2: // upvotes (uint32)
-        song.upvotes = reader.readVarint()
-        break
-      case 3: // downvotes (uint32)
-        song.downvotes = reader.readVarint()
-        break
-      case 4: // uploadTimeUnix (uint32)
-        song.uploadTimeUnix = reader.readVarint()
-        break
-      case 5: // mapId (uint32)
-        song.mapId = reader.readVarint()
-        break
-      case 6: // songDurationSeconds (uint32)
-        song.songDurationSeconds = reader.readVarint()
-        break
-      case 7: // songName (string)
-        song.songName = reader.readString()
-        break
-      case 8: // songAuthorName (string)
-        song.songAuthorName = reader.readString()
-        break
-      case 9: // levelAuthorName (string)
-        song.levelAuthorName = reader.readString()
-        break
-      case 10: // uploaderName (string, optional)
-        song.uploaderName = reader.readString()
-        break
-      case 11: // difficulties (repeated SongDifficultyProto)
-        song.difficulties.push(decodeDifficulty(reader.readBytes()))
-        break
-      case 12: // rankedChangeUnix (uint32)
-        song.rankedChangeUnix = reader.readVarint()
-        break
-      case 13: // rankedStates (uint32 flags)
-        song.rankedStates = reader.readVarint()
-        break
-      case 14: // tags (uint64 bitfield)
-        song.tags = reader.readVarint64()
-        break
-      case 15: // uploadFlags (uint32 flags)
-        song.uploadFlags = reader.readVarint()
-        break
-      default:
-        reader.skipField(wireType)
-        break
-    }
-  }, 0, bytes.length)
+  decodeMessage(
+    bytes,
+    (fieldNumber, wireType, reader) => {
+      switch (fieldNumber) {
+        case 1: // bpm (float, wire type 5 = fixed32)
+          song.bpm = reader.readFloat()
+          break
+        case 2: // upvotes (uint32)
+          song.upvotes = reader.readVarint()
+          break
+        case 3: // downvotes (uint32)
+          song.downvotes = reader.readVarint()
+          break
+        case 4: // uploadTimeUnix (uint32)
+          song.uploadTimeUnix = reader.readVarint()
+          break
+        case 5: // mapId (uint32)
+          song.mapId = reader.readVarint()
+          break
+        case 6: // songDurationSeconds (uint32)
+          song.songDurationSeconds = reader.readVarint()
+          break
+        case 7: // songName (string)
+          song.songName = reader.readString()
+          break
+        case 8: // songAuthorName (string)
+          song.songAuthorName = reader.readString()
+          break
+        case 9: // levelAuthorName (string)
+          song.levelAuthorName = reader.readString()
+          break
+        case 10: // uploaderName (string, optional)
+          song.uploaderName = reader.readString()
+          break
+        case 11: // difficulties (repeated SongDifficultyProto)
+          song.difficulties.push(decodeDifficulty(reader.readBytes()))
+          break
+        case 12: // rankedChangeUnix (uint32)
+          song.rankedChangeUnix = reader.readVarint()
+          break
+        case 13: // rankedStates (uint32 flags)
+          song.rankedStates = reader.readVarint()
+          break
+        case 14: // tags (uint64 bitfield)
+          song.tags = reader.readVarint64()
+          break
+        case 15: // uploadFlags (uint32 flags)
+          song.uploadFlags = reader.readVarint()
+          break
+        default:
+          reader.skipField(wireType)
+          break
+      }
+    },
+    0,
+    bytes.length,
+  )
 
   return song
 }
@@ -190,28 +200,33 @@ function decodeContainer(bytes: Uint8Array): SongProtoContainer {
     tagList: [],
   }
 
-  decodeMessage(bytes, (fieldNumber, wireType, reader) => {
-    switch (fieldNumber) {
-      case 1: // formatVersion (uint32)
-        container.formatVersion = reader.readVarint()
-        break
-      case 2: // scrapeEndedTimeUnix (uint32)
-        container.scrapeEndedTimeUnix = reader.readVarint()
-        break
-      case 3: // songHashes (bytes)
-        container.songHashes = reader.readBytes()
-        break
-      case 4: // songs (repeated SongProto)
-        container.songs.push(decodeSong(reader.readBytes()))
-        break
-      case 5: // tagList (repeated string)
-        container.tagList.push(reader.readString())
-        break
-      default:
-        reader.skipField(wireType)
-        break
-    }
-  }, 0, bytes.length)
+  decodeMessage(
+    bytes,
+    (fieldNumber, wireType, reader) => {
+      switch (fieldNumber) {
+        case 1: // formatVersion (uint32)
+          container.formatVersion = reader.readVarint()
+          break
+        case 2: // scrapeEndedTimeUnix (uint32)
+          container.scrapeEndedTimeUnix = reader.readVarint()
+          break
+        case 3: // songHashes (bytes)
+          container.songHashes = reader.readBytes()
+          break
+        case 4: // songs (repeated SongProto)
+          container.songs.push(decodeSong(reader.readBytes()))
+          break
+        case 5: // tagList (repeated string)
+          container.tagList.push(reader.readString())
+          break
+        default:
+          reader.skipField(wireType)
+          break
+      }
+    },
+    0,
+    bytes.length,
+  )
 
   return container
 }
@@ -227,9 +242,7 @@ export function parseSongDetails(bytes: Uint8Array): ParsedDatabase {
   const container = decodeContainer(bytes)
 
   if (container.formatVersion !== 3) {
-    throw new Error(
-      `Unsupported format version: ${container.formatVersion} (expected 3)`
-    )
+    throw new Error(`Unsupported format version: ${container.formatVersion} (expected 3)`)
   }
 
   const songs: ParsedSong[] = []
@@ -238,7 +251,7 @@ export function parseSongDetails(bytes: Uint8Array): ParsedDatabase {
   const expectedHashLength = container.songs.length * 20
   if (hashBytes.length < expectedHashLength) {
     throw new Error(
-      `songHashes blob too short: ${hashBytes.length} bytes, expected ${expectedHashLength} (${container.songs.length} songs × 20 bytes)`
+      `songHashes blob too short: ${hashBytes.length} bytes, expected ${expectedHashLength} (${container.songs.length} songs × 20 bytes)`,
     )
   }
 

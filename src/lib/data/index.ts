@@ -38,7 +38,7 @@ export interface EnsureDataResult {
 export function planAfterFetch(
   fetchResult: { changed: boolean; bytes?: Uint8Array; etag?: string },
   storedEtag: string | undefined,
-  source: DataSource
+  source: DataSource,
 ):
   | { action: 'skip'; result: EnsureDataResult }
   | { action: 'parse'; bytes: Uint8Array; etag?: string; source: DataSource } {
@@ -67,7 +67,7 @@ export function planAfterFetch(
  * 3. If 200: decompress, parse, and return the ParsedDatabase.
  */
 export async function ensureDataLoaded(
-  onProgress?: (progress: DataLoadProgress) => void
+  onProgress?: (progress: DataLoadProgress) => void,
 ): Promise<EnsureDataResult> {
   let lastError: Error | null = null
 

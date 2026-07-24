@@ -89,7 +89,7 @@ export function buildSubsonicUrl(
   baseUrl: string,
   endpoint: string,
   auth: AuthParams,
-  extraParams?: Record<string, string | number | undefined>
+  extraParams?: Record<string, string | number | undefined>,
 ): string {
   const url = new URL(endpoint, baseUrl)
   url.searchParams.set('u', auth.u)

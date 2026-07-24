@@ -95,10 +95,7 @@ export function MatchView({ tagList }: MatchViewProps) {
   const filteredResults = state.results.filter((r) => {
     if (debouncedSearch) {
       const q = debouncedSearch.toLowerCase()
-      if (
-        !r.track.title.toLowerCase().includes(q) &&
-        !r.track.artist.toLowerCase().includes(q)
-      )
+      if (!r.track.title.toLowerCase().includes(q) && !r.track.artist.toLowerCase().includes(q))
         return false
     }
     if (minScore > 0) {
@@ -176,9 +173,7 @@ export function MatchView({ tagList }: MatchViewProps) {
           disabled={state.status === 'loading'}
           className="h-8"
         >
-          {state.status === 'loading' ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : null}
+          {state.status === 'loading' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
           Re-match
         </Button>
       </div>
@@ -198,11 +193,12 @@ export function MatchView({ tagList }: MatchViewProps) {
         <span>{state.totalMaps.toLocaleString()} BeatSaver maps</span>
         {state.progress && state.status === 'loading' && (
           <span className="text-primary">
-            · {state.progress.phase === 'building-keys'
+            ·{' '}
+            {state.progress.phase === 'building-keys'
               ? `Building keys: ${state.progress.current.toLocaleString()} / ${state.progress.total.toLocaleString()}`
               : state.progress.phase === 'matching'
-              ? `Matching: ${state.progress.current.toLocaleString()} / ${state.progress.total.toLocaleString()}`
-              : 'Done'}
+                ? `Matching: ${state.progress.current.toLocaleString()} / ${state.progress.total.toLocaleString()}`
+                : 'Done'}
           </span>
         )}
         {state.error && (
@@ -229,9 +225,11 @@ export function MatchView({ tagList }: MatchViewProps) {
                   <div
                     className="saber-gradient h-full transition-all duration-300"
                     style={{
-                      width: `${state.progress.total > 0
-                        ? (state.progress.current / state.progress.total) * 100
-                        : 0}%`,
+                      width: `${
+                        state.progress.total > 0
+                          ? (state.progress.current / state.progress.total) * 100
+                          : 0
+                      }%`,
                     }}
                   />
                 </div>
@@ -268,10 +266,18 @@ export function MatchView({ tagList }: MatchViewProps) {
             {/* Header */}
             <div className="sticky top-0 z-10 flex border-b bg-background">
               <div className="w-8 shrink-0 px-2 py-2" />
-              <div className="w-64 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Artist</div>
-              <div className="flex-1 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Title</div>
-              <div className="w-16 shrink-0 px-2 py-2 text-right font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Score</div>
-              <div className="w-16 shrink-0 px-2 py-2 text-right font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Maps</div>
+              <div className="w-64 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Artist
+              </div>
+              <div className="flex-1 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Title
+              </div>
+              <div className="w-16 shrink-0 px-2 py-2 text-right font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Score
+              </div>
+              <div className="w-16 shrink-0 px-2 py-2 text-right font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Maps
+              </div>
             </div>
 
             {pageResults.map((result, pageIdx) => {
@@ -316,8 +322,8 @@ export function MatchView({ tagList }: MatchViewProps) {
                           bestScore >= 0.9
                             ? 'text-primary font-bold'
                             : bestScore >= 0.8
-                            ? 'text-foreground'
-                            : 'text-muted-foreground'
+                              ? 'text-foreground'
+                              : 'text-muted-foreground',
                         )}
                       >
                         {(bestScore * 100).toFixed(0)}%
@@ -334,15 +340,78 @@ export function MatchView({ tagList }: MatchViewProps) {
                       {/* Column header */}
                       <div className="flex items-center border-b border-border/30 pl-8">
                         <div className="w-10 shrink-0" />
-                        <SortHeader label="Song" sortKey="song_name" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="flex-1" />
-                        <SortHeader label="Author" sortKey="song_author" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-32" />
-                        <SortHeader label="Mapper" sortKey="level_author" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-32" />
-                        <SortHeader label="BPM" sortKey="bpm" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-12" />
-                        <SortHeader label="Dur" sortKey="duration" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-12" />
-                        <SortHeader label="Rating" sortKey="rating" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-14" />
-                        <SortHeader label="Ranked" sortKey="ranked" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-14" />
-                        <SortHeader label="Uploaded" sortKey="upload_time" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-24" />
-                        <SortHeader label="Score" sortKey="score" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-14" />
+                        <SortHeader
+                          label="Song"
+                          sortKey="song_name"
+                          currentSort={matchSort}
+                          sortDir={matchSortDir}
+                          onClick={handleMatchSortClick}
+                          className="flex-1"
+                        />
+                        <SortHeader
+                          label="Author"
+                          sortKey="song_author"
+                          currentSort={matchSort}
+                          sortDir={matchSortDir}
+                          onClick={handleMatchSortClick}
+                          className="w-32"
+                        />
+                        <SortHeader
+                          label="Mapper"
+                          sortKey="level_author"
+                          currentSort={matchSort}
+                          sortDir={matchSortDir}
+                          onClick={handleMatchSortClick}
+                          className="w-32"
+                        />
+                        <SortHeader
+                          label="BPM"
+                          sortKey="bpm"
+                          currentSort={matchSort}
+                          sortDir={matchSortDir}
+                          onClick={handleMatchSortClick}
+                          className="w-12"
+                        />
+                        <SortHeader
+                          label="Dur"
+                          sortKey="duration"
+                          currentSort={matchSort}
+                          sortDir={matchSortDir}
+                          onClick={handleMatchSortClick}
+                          className="w-12"
+                        />
+                        <SortHeader
+                          label="Rating"
+                          sortKey="rating"
+                          currentSort={matchSort}
+                          sortDir={matchSortDir}
+                          onClick={handleMatchSortClick}
+                          className="w-14"
+                        />
+                        <SortHeader
+                          label="Ranked"
+                          sortKey="ranked"
+                          currentSort={matchSort}
+                          sortDir={matchSortDir}
+                          onClick={handleMatchSortClick}
+                          className="w-14"
+                        />
+                        <SortHeader
+                          label="Uploaded"
+                          sortKey="upload_time"
+                          currentSort={matchSort}
+                          sortDir={matchSortDir}
+                          onClick={handleMatchSortClick}
+                          className="w-24"
+                        />
+                        <SortHeader
+                          label="Score"
+                          sortKey="score"
+                          currentSort={matchSort}
+                          sortDir={matchSortDir}
+                          onClick={handleMatchSortClick}
+                          className="w-14"
+                        />
                         <div className="w-24 shrink-0 px-2 py-1" />
                       </div>
                       {sortMatches(result.matches, matchSort, matchSortDir).map((match) => (
@@ -362,20 +431,34 @@ export function MatchView({ tagList }: MatchViewProps) {
                               }}
                             />
                           </div>
-                          <div className="flex-1 truncate px-2 text-xs font-medium">{match.song.song_name}</div>
-                          <div className="w-32 shrink-0 truncate px-2 text-xs text-muted-foreground">{match.song.song_author}</div>
-                          <div className="w-32 shrink-0 truncate px-2 text-xs text-muted-foreground">{match.song.level_author}</div>
-                          <div className="w-12 shrink-0 px-2 font-mono text-xs">{match.song.bpm.toFixed(0)}</div>
-                          <div className="w-12 shrink-0 px-2 font-mono text-xs text-muted-foreground">{formatDuration(match.song.duration)}</div>
-                          <div className="w-14 shrink-0 px-2 font-mono text-xs">{(match.song.rating * 100).toFixed(0)}%</div>
+                          <div className="flex-1 truncate px-2 text-xs font-medium">
+                            {match.song.song_name}
+                          </div>
+                          <div className="w-32 shrink-0 truncate px-2 text-xs text-muted-foreground">
+                            {match.song.song_author}
+                          </div>
+                          <div className="w-32 shrink-0 truncate px-2 text-xs text-muted-foreground">
+                            {match.song.level_author}
+                          </div>
+                          <div className="w-12 shrink-0 px-2 font-mono text-xs">
+                            {match.song.bpm.toFixed(0)}
+                          </div>
+                          <div className="w-12 shrink-0 px-2 font-mono text-xs text-muted-foreground">
+                            {formatDuration(match.song.duration)}
+                          </div>
+                          <div className="w-14 shrink-0 px-2 font-mono text-xs">
+                            {(match.song.rating * 100).toFixed(0)}%
+                          </div>
                           <div className="w-14 shrink-0 px-2">
                             <div className="flex gap-1">
-                              {isRankedSet(match.song.ranked_states, RankedStates.ScoresaberRanked) && (
-                                <span className="text-[10px] font-bold text-primary">SS</span>
-                              )}
-                              {isRankedSet(match.song.ranked_states, RankedStates.BeatleaderRanked) && (
-                                <span className="text-[10px] font-bold text-accent">BL</span>
-                              )}
+                              {isRankedSet(
+                                match.song.ranked_states,
+                                RankedStates.ScoresaberRanked,
+                              ) && <span className="text-[10px] font-bold text-primary">SS</span>}
+                              {isRankedSet(
+                                match.song.ranked_states,
+                                RankedStates.BeatleaderRanked,
+                              ) && <span className="text-[10px] font-bold text-accent">BL</span>}
                             </div>
                           </div>
                           <div className="w-24 shrink-0 px-2 font-mono text-xs text-muted-foreground">
@@ -405,7 +488,10 @@ export function MatchView({ tagList }: MatchViewProps) {
           page={page}
           pageSize={pageSize}
           onPageChange={setPage}
-          onPageSizeChange={(size) => { setPageSize(size); setPage(1) }}
+          onPageSizeChange={(size) => {
+            setPageSize(size)
+            setPage(1)
+          }}
         />
       )}
 

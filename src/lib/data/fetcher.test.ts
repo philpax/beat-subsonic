@@ -13,9 +13,15 @@ import type { DataSource } from '@/lib/data/sources'
 const store: Record<string, string> = {}
 const localStorageMock = {
   getItem: (key: string) => store[key] ?? null,
-  setItem: (key: string, value: string) => { store[key] = value },
-  removeItem: (key: string) => { delete store[key] },
-  clear: () => { for (const k of Object.keys(store)) delete store[k] },
+  setItem: (key: string, value: string) => {
+    store[key] = value
+  },
+  removeItem: (key: string) => {
+    delete store[key]
+  },
+  clear: () => {
+    for (const k of Object.keys(store)) delete store[k]
+  },
 }
 vi.stubGlobal('localStorage', localStorageMock)
 
@@ -24,11 +30,7 @@ const mockSource: DataSource = {
   url: 'https://example.com/test.gz',
 }
 
-function createMockResponse(
-  status: number,
-  body: Uint8Array | null,
-  etag?: string
-): Response {
+function createMockResponse(status: number, body: Uint8Array | null, etag?: string): Response {
   const headers = new Headers()
   if (etag) headers.set('ETag', etag)
   const stream = body
@@ -99,11 +101,7 @@ describe('planAfterFetch', () => {
   const source = mockSource
 
   it('returns skip action on 304 (unchanged)', () => {
-    const result = planAfterFetch(
-      { changed: false },
-      'stored-etag',
-      source
-    )
+    const result = planAfterFetch({ changed: false }, 'stored-etag', source)
     expect(result.action).toBe('skip')
     if (result.action === 'skip') {
       expect(result.result.changed).toBe(false)
@@ -113,11 +111,7 @@ describe('planAfterFetch', () => {
 
   it('returns parse action on 200 (changed)', () => {
     const bytes = new Uint8Array([1, 2, 3])
-    const result = planAfterFetch(
-      { changed: true, bytes, etag: 'new-etag' },
-      'old-etag',
-      source
-    )
+    const result = planAfterFetch({ changed: true, bytes, etag: 'new-etag' }, 'old-etag', source)
     expect(result.action).toBe('parse')
     if (result.action === 'parse') {
       expect(result.bytes).toBe(bytes)
@@ -137,9 +131,7 @@ describe('fetcher (imperative shell)', () => {
   it('returns changed=false on 304', async () => {
     vi.stubGlobal('DecompressionStream', MockDecompressionStream)
 
-    const mockFetch = vi.fn().mockResolvedValue(
-      new Response(null, { status: 304 })
-    )
+    const mockFetch = vi.fn().mockResolvedValue(new Response(null, { status: 304 }))
     vi.stubGlobal('fetch', mockFetch)
 
     const result = await fetchSongData(mockSource, 'some-etag')
@@ -155,9 +147,7 @@ describe('fetcher (imperative shell)', () => {
     vi.stubGlobal('DecompressionStream', MockDecompressionStream)
 
     const testData = new Uint8Array([1, 2, 3, 4, 5])
-    const mockFetch = vi.fn().mockResolvedValue(
-      createMockResponse(200, testData, 'etag-abc123')
-    )
+    const mockFetch = vi.fn().mockResolvedValue(createMockResponse(200, testData, 'etag-abc123'))
     vi.stubGlobal('fetch', mockFetch)
 
     const result = await fetchSongData(mockSource)
@@ -170,9 +160,7 @@ describe('fetcher (imperative shell)', () => {
     vi.stubGlobal('DecompressionStream', MockDecompressionStream)
 
     const testData = new Uint8Array([1])
-    const mockFetch = vi.fn().mockResolvedValue(
-      createMockResponse(200, testData, 'etag-1')
-    )
+    const mockFetch = vi.fn().mockResolvedValue(createMockResponse(200, testData, 'etag-1'))
     vi.stubGlobal('fetch', mockFetch)
 
     await fetchSongData(mockSource)
@@ -182,9 +170,7 @@ describe('fetcher (imperative shell)', () => {
   })
 
   it('throws on non-OK response', async () => {
-    const mockFetch = vi.fn().mockResolvedValue(
-      new Response(null, { status: 500 })
-    )
+    const mockFetch = vi.fn().mockResolvedValue(new Response(null, { status: 500 }))
     vi.stubGlobal('fetch', mockFetch)
 
     await expect(fetchSongData(mockSource)).rejects.toThrow('HTTP 500')

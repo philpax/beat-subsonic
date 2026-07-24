@@ -93,7 +93,7 @@ function buildWhereClause(filters: SongFilters): {
     const search = filters.search.trim()
     if (search) {
       conditions.push(
-        `(song_name LIKE ? COLLATE NOCASE OR song_author LIKE ? COLLATE NOCASE OR level_author LIKE ? COLLATE NOCASE OR uploader_name LIKE ? COLLATE NOCASE OR key LIKE ? OR hash LIKE ?)`
+        `(song_name LIKE ? COLLATE NOCASE OR song_author LIKE ? COLLATE NOCASE OR level_author LIKE ? COLLATE NOCASE OR uploader_name LIKE ? COLLATE NOCASE OR key LIKE ? OR hash LIKE ?)`,
       )
       const pattern = `%${search}%`
       params.push(pattern, pattern, pattern, pattern, pattern, pattern)
@@ -191,7 +191,7 @@ function buildWhereClause(filters: SongFilters): {
 
   if (diffConditions.length > 0) {
     conditions.push(
-      `EXISTS (SELECT 1 FROM difficulties d WHERE d.song_map_id = songs.map_id AND ${diffConditions.join(' AND ')})`
+      `EXISTS (SELECT 1 FROM difficulties d WHERE d.song_map_id = songs.map_id AND ${diffConditions.join(' AND ')})`,
     )
   }
 

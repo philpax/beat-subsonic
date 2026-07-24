@@ -21,28 +21,19 @@ function Dialog({ open, onOpenChange, children }: DialogProps) {
   if (!open) return null
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="fixed inset-0 bg-black/50"
-        onClick={() => onOpenChange(false)}
-      />
+      <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
       {children}
     </div>,
-    document.body
+    document.body,
   )
 }
 
-function DialogContent({
-  className,
-  children,
-}: {
-  className?: string
-  children: React.ReactNode
-}) {
+function DialogContent({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
     <div
       className={cn(
         'relative z-50 grid w-full max-w-2xl gap-4 border bg-background p-6 shadow-lg rounded-lg max-h-[90vh] overflow-y-auto',
-        className
+        className,
       )}
     >
       {children}
@@ -55,10 +46,20 @@ function DialogHeader({ children }: { children: React.ReactNode }) {
 }
 
 function DialogTitle({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <h2 className={cn('text-lg font-semibold leading-none tracking-tight', className)}>{children}</h2>
+  return (
+    <h2 className={cn('text-lg font-semibold leading-none tracking-tight', className)}>
+      {children}
+    </h2>
+  )
 }
 
-function DialogDescription({ children, className }: { children: React.ReactNode; className?: string }) {
+function DialogDescription({
+  children,
+  className,
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
   return <p className={cn('text-sm text-muted-foreground', className)}>{children}</p>
 }
 

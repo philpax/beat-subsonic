@@ -184,7 +184,12 @@ export function buildMapKey(song: {
 
   const dashIdx = song.songName.indexOf(' - ')
   if (dashIdx <= 0) {
-    return { artistVariants, titleVariants: titleVariantsOf(song.songName), remixTags, variants: [] }
+    return {
+      artistVariants,
+      titleVariants: titleVariantsOf(song.songName),
+      remixTags,
+      variants: [],
+    }
   }
 
   const titleSeen = new Set<string>()
@@ -199,10 +204,7 @@ export function buildMapKey(song: {
 /**
  * Build normalized artist + title variants for a Subsonic track.
  */
-export function buildTrackKey(track: {
-  artist: string
-  title: string
-}): Omit<TrackKey, 'index'> {
+export function buildTrackKey(track: { artist: string; title: string }): Omit<TrackKey, 'index'> {
   return {
     // The cached arrays are shared; treat them as immutable
     artistVariants: artistVariantsOf(track.artist),
@@ -449,7 +451,7 @@ function artistPairMatches(
   trackArtistMetas: StringMeta[],
   ma: string,
   mam: StringMeta,
-  threshold: number
+  threshold: number,
 ): boolean {
   for (let i = 0; i < trackArtistVariants.length; i++) {
     const ta = trackArtistVariants[i]
@@ -468,7 +470,7 @@ function artistPairMatches(
  *    the fuzzy artist work from per-(track, map) to per-(artist, variant).
  */
 function resolveArtist(ctx: MatcherContext, track: TrackKey): ArtistResolution {
-  const signature = track.artistVariants.join('|')  // '|' cannot appear in normalized variants
+  const signature = track.artistVariants.join('|') // '|' cannot appear in normalized variants
   let resolution = ctx.resolutions.get(signature)
   if (resolution) return resolution
 
@@ -520,7 +522,7 @@ function resolveArtist(ctx: MatcherContext, track: TrackKey): ArtistResolution {
           trackMetas,
           index.artistVariants[id],
           variantMeta(index, id),
-          threshold
+          threshold,
         )
       ) {
         acceptedIds.add(id)
@@ -557,7 +559,7 @@ function artistMatches(
   resolution: ArtistResolution,
   trackArtistVariants: string[],
   trackArtistMetas: StringMeta[],
-  mapIdx: number
+  mapIdx: number,
 ): boolean {
   const { index } = ctx
   const ids = index.mapArtistIds[mapIdx]
@@ -575,7 +577,7 @@ function artistMatches(
         trackArtistMetas,
         index.artistVariants[id],
         variantMeta(index, id),
-        ctx.threshold
+        ctx.threshold,
       )
       resolution.verdicts.set(id, verdict)
     }
@@ -617,7 +619,7 @@ function titleMatches(
   trackTitleMetas: StringMeta[],
   mapTitleVariants: string[],
   mapTitleMetas: StringMeta[],
-  threshold: number
+  threshold: number,
 ): boolean {
   for (let i = 0; i < trackTitleVariants.length; i++) {
     const tt = trackTitleVariants[i]
@@ -638,7 +640,7 @@ function titleMatches(
           trackTitleMetas[i],
           mapTitleVariants[j],
           mapTitleMetas[j],
-          threshold
+          threshold,
         )
       ) {
         return true
@@ -740,7 +742,7 @@ function matchTrackWithContext(ctx: MatcherContext, track: TrackKey): number[] {
         trackTitleMetas,
         map.titleVariants,
         titleMetasFor(index, mapIdx, map.titleVariants),
-        threshold
+        threshold,
       )
     ) {
       matched.add(mapIdx)
@@ -761,7 +763,7 @@ export function matchTrackToMaps(
   track: TrackKey,
   index: MatchIndex,
   maps: MapKey[],
-  threshold: number
+  threshold: number,
 ): number[] {
   return matchTrackWithContext(createContext(index, maps, threshold), track)
 }
@@ -785,7 +787,7 @@ export function matchAllTracks(
   maps: MapKey[],
   threshold: number,
   onProgress?: (current: number, total: number) => void,
-  progressInterval: number = 500
+  progressInterval: number = 500,
 ): MatchResult[] {
   let index = indexCache.get(maps)
   if (!index) {
@@ -821,10 +823,7 @@ export function matchAllTracks(
  * Returns the minimum of the best title score and best artist score,
  * so both components must be good for a high overall score.
  */
-export function computeMatchScore(
-  track: TrackKey,
-  map: MapKey
-): number {
+export function computeMatchScore(track: TrackKey, map: MapKey): number {
   let bestTitle = 0
   for (const tt of track.titleVariants) {
     for (const mt of map.titleVariants) {

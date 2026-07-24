@@ -13,9 +13,7 @@ export function CoverImage({ hash, alt = '', className = '' }: CoverImageProps) 
 
   if (error) {
     return (
-      <div
-        className={`flex items-center justify-center bg-muted ${className}`}
-      >
+      <div className={`flex items-center justify-center bg-muted ${className}`}>
         <span className="text-xs text-muted-foreground">No cover</span>
       </div>
     )
@@ -23,9 +21,7 @@ export function CoverImage({ hash, alt = '', className = '' }: CoverImageProps) 
 
   return (
     <>
-      {!loaded && (
-        <div className={`animate-pulse bg-muted ${className}`} />
-      )}
+      {!loaded && <div className={`animate-pulse bg-muted ${className}`} />}
       <img
         src={buildCoverUrl(hash)}
         alt={alt}

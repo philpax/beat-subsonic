@@ -35,13 +35,7 @@ function App() {
   }, [isDark])
 
   if (state.status !== 'ready') {
-    return (
-      <LoadingScreen
-        status={state.status}
-        error={state.error}
-        progress={state.progress}
-      />
-    )
+    return <LoadingScreen status={state.status} error={state.error} progress={state.progress} />
   }
 
   const stats = state.stats

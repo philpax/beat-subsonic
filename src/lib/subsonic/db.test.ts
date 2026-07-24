@@ -63,23 +63,23 @@ describe('trackToBindParams', () => {
     const params = trackToBindParams(track, fetchedAt)
 
     expect(params).toHaveLength(17)
-    expect(params[0]).toBe('123')           // id
-    expect(params[1]).toBe('My Song')        // title
-    expect(params[2]).toBe('My Artist')      // artist
-    expect(params[3]).toBe('My Album')       // album
-    expect(params[4]).toBe('album-1')        // album_id
-    expect(params[5]).toBe('artist-1')      // artist_id
-    expect(params[6]).toBe(240)              // duration
-    expect(params[7]).toBe(5)                // track_number
-    expect(params[8]).toBe(1)               // disc_number
-    expect(params[9]).toBe(2023)             // year
-    expect(params[10]).toBe('Electronic')    // genre
-    expect(params[11]).toBe('flac')          // suffix
-    expect(params[12]).toBe(1411)            // bit_rate
+    expect(params[0]).toBe('123') // id
+    expect(params[1]).toBe('My Song') // title
+    expect(params[2]).toBe('My Artist') // artist
+    expect(params[3]).toBe('My Album') // album
+    expect(params[4]).toBe('album-1') // album_id
+    expect(params[5]).toBe('artist-1') // artist_id
+    expect(params[6]).toBe(240) // duration
+    expect(params[7]).toBe(5) // track_number
+    expect(params[8]).toBe(1) // disc_number
+    expect(params[9]).toBe(2023) // year
+    expect(params[10]).toBe('Electronic') // genre
+    expect(params[11]).toBe('flac') // suffix
+    expect(params[12]).toBe(1411) // bit_rate
     expect(params[13]).toBe('music/artist/album/song.flac') // path
-    expect(params[14]).toBe('art-123')      // cover_art
+    expect(params[14]).toBe('art-123') // cover_art
     expect(params[15]).toBe('myartistmysong') // normalized_key
-    expect(params[16]).toBe(1700000000)      // fetched_at
+    expect(params[16]).toBe(1700000000) // fetched_at
   })
 
   it('uses null for missing optional fields', () => {
@@ -91,18 +91,18 @@ describe('trackToBindParams', () => {
     }
     const params = trackToBindParams(track, 1000)
 
-    expect(params[3]).toBeNull()   // album
-    expect(params[4]).toBeNull()   // album_id
-    expect(params[5]).toBeNull()   // artist_id
-    expect(params[6]).toBeNull()   // duration
-    expect(params[7]).toBeNull()   // track_number
-    expect(params[8]).toBeNull()   // disc_number
-    expect(params[9]).toBeNull()   // year
-    expect(params[10]).toBeNull()  // genre
-    expect(params[11]).toBeNull()  // suffix
-    expect(params[12]).toBeNull()  // bit_rate
-    expect(params[13]).toBeNull()  // path
-    expect(params[14]).toBeNull()  // cover_art
+    expect(params[3]).toBeNull() // album
+    expect(params[4]).toBeNull() // album_id
+    expect(params[5]).toBeNull() // artist_id
+    expect(params[6]).toBeNull() // duration
+    expect(params[7]).toBeNull() // track_number
+    expect(params[8]).toBeNull() // disc_number
+    expect(params[9]).toBeNull() // year
+    expect(params[10]).toBeNull() // genre
+    expect(params[11]).toBeNull() // suffix
+    expect(params[12]).toBeNull() // bit_rate
+    expect(params[13]).toBeNull() // path
+    expect(params[14]).toBeNull() // cover_art
   })
 
   it('uses empty string for missing artist', () => {
@@ -112,7 +112,7 @@ describe('trackToBindParams', () => {
       isDir: false,
     }
     const params = trackToBindParams(track, 1000)
-    expect(params[2]).toBe('')  // artist defaults to empty string
+    expect(params[2]).toBe('') // artist defaults to empty string
   })
 
   it('computes normalized_key from artist + title', () => {

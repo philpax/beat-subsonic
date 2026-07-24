@@ -46,7 +46,9 @@ export function useSubsonic() {
   const [credentials, setCredentials] = useState<SubsonicCredentials>(loadCredentials)
   const [status, setStatus] = useState<SubsonicStatus>('idle')
   const [error, setError] = useState<string | null>(null)
-  const [fetchProgress, setFetchProgress] = useState<{ fetched: number; total: number } | null>(null)
+  const [fetchProgress, setFetchProgress] = useState<{ fetched: number; total: number } | null>(
+    null,
+  )
   const clientRef = useRef<SubsonicClient | null>(null)
 
   // Stats are cached via TanStack Query — survives tab switches
@@ -65,32 +67,35 @@ export function useSubsonic() {
     setCredentials(creds)
   }, [])
 
-  const fetchTracks = useCallback(async (client: SubsonicClient) => {
-    setStatus('fetching')
-    setError(null)
-    setFetchProgress(null)
-
-    try {
-      const result = await fetchAllSubsonicData(client, (fetched, total) => {
-        setFetchProgress({ fetched, total })
-      })
-
-      const dbClient = getDbClient()
-      await dbClient.subsonicImport(result.tracks, result.fetchedAt)
-
-      // Invalidate both stats and tracks queries so the table refreshes
-      await queryClient.invalidateQueries({ queryKey: ['subsonic-stats'] })
-      await queryClient.invalidateQueries({ queryKey: ['subsonic-tracks'] })
-
-      setStatus('connected')
+  const fetchTracks = useCallback(
+    async (client: SubsonicClient) => {
+      setStatus('fetching')
       setError(null)
       setFetchProgress(null)
-    } catch (err) {
-      setStatus('error')
-      setError(err instanceof Error ? err.message : String(err))
-      setFetchProgress(null)
-    }
-  }, [queryClient])
+
+      try {
+        const result = await fetchAllSubsonicData(client, (fetched, total) => {
+          setFetchProgress({ fetched, total })
+        })
+
+        const dbClient = getDbClient()
+        await dbClient.subsonicImport(result.tracks, result.fetchedAt)
+
+        // Invalidate both stats and tracks queries so the table refreshes
+        await queryClient.invalidateQueries({ queryKey: ['subsonic-stats'] })
+        await queryClient.invalidateQueries({ queryKey: ['subsonic-tracks'] })
+
+        setStatus('connected')
+        setError(null)
+        setFetchProgress(null)
+      } catch (err) {
+        setStatus('error')
+        setError(err instanceof Error ? err.message : String(err))
+        setFetchProgress(null)
+      }
+    },
+    [queryClient],
+  )
 
   /** Connect to the server and immediately fetch the full library. */
   const connect = useCallback(async () => {
@@ -104,7 +109,11 @@ export function useSubsonic() {
     setError(null)
 
     try {
-      const client = new SubsonicClient(credentials.baseUrl, credentials.username, credentials.password)
+      const client = new SubsonicClient(
+        credentials.baseUrl,
+        credentials.username,
+        credentials.password,
+      )
       await client.ping()
       clientRef.current = client
     } catch (err) {

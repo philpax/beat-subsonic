@@ -23,10 +23,12 @@ import { SubsonicClient } from '../src/lib/subsonic/client'
 import { fetchAllSubsonicData } from '../src/lib/subsonic/fetcher'
 
 async function main() {
-  const [,, subsonicUrl, subsonicUser, subsonicPassword] = process.argv
+  const [, , subsonicUrl, subsonicUser, subsonicPassword] = process.argv
 
   if (!subsonicUrl || !subsonicUser || !subsonicPassword) {
-    console.error('Usage: npx tsx scripts/dump-libraries.ts <subsonic-url> <subsonic-user> <subsonic-password>')
+    console.error(
+      'Usage: npx tsx scripts/dump-libraries.ts <subsonic-url> <subsonic-user> <subsonic-password>',
+    )
     process.exit(1)
   }
 

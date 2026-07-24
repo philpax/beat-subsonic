@@ -71,7 +71,9 @@ function main() {
   })
   const elapsed = Date.now() - startTime
   console.log(`\r  Done in ${(elapsed / 1000).toFixed(1)}s`)
-  console.log(`  ${results.length} tracks matched (${(results.length / tracks.length * 100).toFixed(1)}% of tracks)`)
+  console.log(
+    `  ${results.length} tracks matched (${((results.length / tracks.length) * 100).toFixed(1)}% of tracks)`,
+  )
 
   const matchCounts = results.map((r) => r.mapIndices.length)
   const avgMatches = (matchCounts.reduce((a, b) => a + b, 0) / matchCounts.length).toFixed(1)
@@ -98,7 +100,7 @@ function main() {
   }
   console.log(`\nScore distribution:`)
   for (const [bucket, count] of Object.entries(scoreBuckets)) {
-    console.log(`  ${bucket}: ${count} (${(count / results.length * 100).toFixed(1)}%)`)
+    console.log(`  ${bucket}: ${count} (${((count / results.length) * 100).toFixed(1)}%)`)
   }
 
   // Sample results
@@ -123,7 +125,9 @@ function main() {
     console.log(`\n  ${r.track.title} — ${r.track.artist}`)
     console.log(`    best score: ${(r.bestScore * 100).toFixed(0)}%`)
     for (const m of r.matches.slice(0, 3)) {
-      console.log(`      → "${m.song.song_name}" by ${m.song.song_author} (mapper: ${m.song.level_author}) [${(m.score * 100).toFixed(0)}%]`)
+      console.log(
+        `      → "${m.song.song_name}" by ${m.song.song_author} (mapper: ${m.song.level_author}) [${(m.score * 100).toFixed(0)}%]`,
+      )
     }
   }
 }

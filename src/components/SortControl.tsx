@@ -22,12 +22,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'ranked_states', label: 'Ranked' },
 ]
 
-export function SortControl({
-  sort,
-  sortDir,
-  onSortChange,
-  onSortDirChange,
-}: SortControlProps) {
+export function SortControl({ sort, sortDir, onSortChange, onSortDirChange }: SortControlProps) {
   return (
     <div className="flex items-center gap-1">
       <Select
@@ -46,11 +41,7 @@ export function SortControl({
         className="flex h-8 w-7 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
         title={sortDir === 'asc' ? 'Ascending' : 'Descending'}
       >
-        {sortDir === 'asc' ? (
-          <ArrowUp className="h-3 w-3" />
-        ) : (
-          <ArrowDown className="h-3 w-3" />
-        )}
+        {sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
       </button>
     </div>
   )

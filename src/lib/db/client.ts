@@ -44,10 +44,7 @@ export class DbClient {
     if (this.initPromise) return this.initPromise
 
     this.initPromise = (async () => {
-      this.worker = new Worker(
-        new URL('./worker.ts', import.meta.url),
-        { type: 'module' }
-      )
+      this.worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })
 
       this.worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
         const { type, id, result, error } = event.data
@@ -64,9 +61,7 @@ export class DbClient {
 
       this.worker.onerror = (event) => {
         console.error('[db-client] Worker error:', event)
-        const error = new Error(
-          'Database worker crashed: ' + (event.message ?? 'unknown error')
-        )
+        const error = new Error('Database worker crashed: ' + (event.message ?? 'unknown error'))
         for (const [, pending] of this.pending) {
           pending.reject(error)
         }
@@ -116,8 +111,13 @@ export class DbClient {
     return (await this.send('subsonic-tracks', {})) as unknown as SubsonicTrackRow[]
   }
 
-  async subsonicQueryTracks(query: SubsonicQuery): Promise<{ rows: Record<string, unknown>[]; total: number }> {
-    return (await this.send('subsonic-query', query)) as unknown as { rows: Record<string, unknown>[]; total: number }
+  async subsonicQueryTracks(
+    query: SubsonicQuery,
+  ): Promise<{ rows: Record<string, unknown>[]; total: number }> {
+    return (await this.send('subsonic-query', query)) as unknown as {
+      rows: Record<string, unknown>[]
+      total: number
+    }
   }
 
   async subsonicGetStats(): Promise<SubsonicStats> {

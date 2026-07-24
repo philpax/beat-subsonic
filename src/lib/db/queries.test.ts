@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  buildSongQuery,
-  buildCountQuery,
-  buildDifficultiesQuery,
-} from '@/lib/db/queries'
+import { buildSongQuery, buildCountQuery, buildDifficultiesQuery } from '@/lib/db/queries'
 
 describe('query builder', () => {
   describe('buildCountQuery', () => {
@@ -157,7 +153,7 @@ describe('query builder', () => {
         sortDir: 'desc',
       })
       expect(result.sql).toContain(
-        'ORDER BY (SELECT MAX(stars_ss) FROM difficulties d WHERE d.song_map_id = songs.map_id) DESC'
+        'ORDER BY (SELECT MAX(stars_ss) FROM difficulties d WHERE d.song_map_id = songs.map_id) DESC',
       )
     })
 

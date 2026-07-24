@@ -295,14 +295,15 @@ export function fuzzyBeyondContains(
   am: StringMeta,
   b: string,
   bm: StringMeta,
-  threshold: number
+  threshold: number,
 ): boolean {
   // Token-set (Dice) similarity
   if (am.tokenCount > 0 && bm.tokenCount > 0) {
     const diceUpper = (2 * Math.min(am.tokenCount, bm.tokenCount)) / (am.tokenCount + bm.tokenCount)
     if (diceUpper >= threshold && am.tokens && bm.tokens) {
       let intersection = 0
-      const [small, large] = am.tokens.size <= bm.tokens.size ? [am.tokens, bm.tokens] : [bm.tokens, am.tokens]
+      const [small, large] =
+        am.tokens.size <= bm.tokens.size ? [am.tokens, bm.tokens] : [bm.tokens, am.tokens]
       for (const w of small) {
         if (large.has(w)) intersection++
       }
@@ -312,7 +313,8 @@ export function fuzzyBeyondContains(
       // for threshold > 2/3; for lower thresholds check membership directly.
       const single = am.tokens ? b : a
       const multi = am.tokens ? am.tokens : bm.tokens
-      if (multi && multi.has(single) && 2 / (am.tokenCount + bm.tokenCount) >= threshold) return true
+      if (multi && multi.has(single) && 2 / (am.tokenCount + bm.tokenCount) >= threshold)
+        return true
     }
   }
 
@@ -378,7 +380,7 @@ export function fuzzyTokenAware(
   am: StringMeta,
   b: string,
   bm: StringMeta,
-  threshold: number
+  threshold: number,
 ): boolean {
   // Token-set (Dice) similarity on the full strings — order-insensitive,
   // so leading-token peeling does not apply
@@ -386,7 +388,8 @@ export function fuzzyTokenAware(
     const diceUpper = (2 * Math.min(am.tokenCount, bm.tokenCount)) / (am.tokenCount + bm.tokenCount)
     if (diceUpper >= threshold) {
       let intersection = 0
-      const [small, large] = am.tokens.size <= bm.tokens.size ? [am.tokens, bm.tokens] : [bm.tokens, am.tokens]
+      const [small, large] =
+        am.tokens.size <= bm.tokens.size ? [am.tokens, bm.tokens] : [bm.tokens, am.tokens]
       for (const w of small) {
         if (large.has(w)) intersection++
       }

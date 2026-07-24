@@ -94,13 +94,13 @@ describe('SubsonicDatabase integration', () => {
 
     subsonicDb.importTracks(
       [makeTrack({ id: '30', title: 'Old', artist: 'Old Artist' })],
-      1700000000
+      1700000000,
     )
     expect(subsonicDb.getTrackCount()).toBe(1)
 
     subsonicDb.importTracks(
       [makeTrack({ id: '31', title: 'New', artist: 'New Artist' })],
-      1700000001
+      1700000001,
     )
     expect(subsonicDb.getTrackCount()).toBe(1)
     const tracks = subsonicDb.getAllTracks()
@@ -114,7 +114,7 @@ describe('SubsonicDatabase integration', () => {
 
     subsonicDb.importTracks(
       [makeTrack({ id: '40', title: 'Body F10ating10', artist: 'Camellia' })],
-      1700000000
+      1700000000,
     )
 
     const tracks = subsonicDb.getAllTracks()
@@ -127,7 +127,7 @@ describe('SubsonicDatabase integration', () => {
 
     subsonicDb.importTracks(
       [makeTrack({ id: '50', title: 'To Clear', artist: 'Artist' })],
-      1700000000
+      1700000000,
     )
     expect(subsonicDb.getTrackCount()).toBe(1)
 
@@ -146,7 +146,7 @@ describe('SubsonicDatabase integration', () => {
         makeTrack({ id: '60', title: 'A', artist: 'X' }),
         makeTrack({ id: '61', title: 'B', artist: 'Y' }),
       ],
-      fetchedAt
+      fetchedAt,
     )
 
     const stats = subsonicDb.getStats()

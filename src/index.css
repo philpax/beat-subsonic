@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -81,7 +81,11 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family:
+      'Inter',
+      system-ui,
+      -apple-system,
+      sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
   ::selection {
@@ -118,9 +122,17 @@
 
 /* Loading bar animation */
 @keyframes saber-ignition {
-  0% { width: 0%; opacity: 0.4; }
-  50% { opacity: 1; }
-  100% { width: 100%; opacity: 0.6; }
+  0% {
+    width: 0%;
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    width: 100%;
+    opacity: 0.6;
+  }
 }
 
 .saber-bar {

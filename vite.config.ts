@@ -8,11 +8,7 @@ import { fileURLToPath, URL } from 'node:url'
 export default defineConfig({
   // Set by CI for GitHub Pages project-site deployments (/<repo>/)
   base: process.env.BASE_PATH || '/',
-  plugins: [
-    react(),
-    babel({ presets: [reactCompilerPreset()] }),
-    tailwindcss(),
-  ],
+  plugins: [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

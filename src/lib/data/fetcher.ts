@@ -29,7 +29,7 @@ export function buildFetchHeaders(storedEtag?: string): Record<string, string> {
 /** Interpret an HTTP response status + headers into a decision. */
 export function interpretResponse(
   status: number,
-  etagHeader: string | null
+  etagHeader: string | null,
 ): { changed: boolean; etag?: string } {
   if (status === 304) {
     return { changed: false }
@@ -57,7 +57,7 @@ export function extractCacheHeader(headers: Headers): string | null {
 export async function fetchSongData(
   source: DataSource,
   storedEtag?: string,
-  onProgress?: (loaded: number, total: number | null) => void
+  onProgress?: (loaded: number, total: number | null) => void,
 ): Promise<FetchResult> {
   const headers = buildFetchHeaders(storedEtag)
   const response = await fetch(source.url, { headers })
@@ -91,7 +91,7 @@ export async function fetchSongData(
  */
 export async function decompressGzip(
   body: ReadableStream<Uint8Array> | null,
-  onProgress?: (loaded: number, total: number | null) => void
+  onProgress?: (loaded: number, total: number | null) => void,
 ): Promise<Uint8Array> {
   if (!body) {
     throw new Error('Response body is null')

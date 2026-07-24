@@ -12,12 +12,7 @@
 
 import { SCHEMA_SQL } from './schema.sql'
 import type { ParsedDatabase, ParsedSong, ParsedDifficulty } from '../proto/schema'
-import {
-  buildSongQuery,
-  buildCountQuery,
-  buildDifficultiesQuery,
-  type SongQuery,
-} from './queries'
+import { buildSongQuery, buildCountQuery, buildDifficultiesQuery, type SongQuery } from './queries'
 
 /** Minimal interface for the sqlite-wasm Database we depend on. */
 export interface SqliteDb {
@@ -208,8 +203,12 @@ export class SongDatabase {
 
     db.exec('COMMIT')
 
-    const songCount = (db.exec('SELECT COUNT(*) FROM songs', { returnValue: 'resultRows' }) as unknown[][])[0][0] as number
-    const difficultyCount = (db.exec('SELECT COUNT(*) FROM difficulties', { returnValue: 'resultRows' }) as unknown[][])[0][0] as number
+    const songCount = (
+      db.exec('SELECT COUNT(*) FROM songs', { returnValue: 'resultRows' }) as unknown[][]
+    )[0][0] as number
+    const difficultyCount = (
+      db.exec('SELECT COUNT(*) FROM difficulties', { returnValue: 'resultRows' }) as unknown[][]
+    )[0][0] as number
 
     return { songCount, difficultyCount }
   }
@@ -218,10 +217,12 @@ export class SongDatabase {
     const db = this.getDb()
     const filters = query.filters ?? {}
     const countBuilt = buildCountQuery(filters)
-    const total = (db.exec(countBuilt.sql, {
-      bind: countBuilt.params,
-      returnValue: 'resultRows',
-    }) as unknown[][])[0][0] as number
+    const total = (
+      db.exec(countBuilt.sql, {
+        bind: countBuilt.params,
+        returnValue: 'resultRows',
+      }) as unknown[][]
+    )[0][0] as number
 
     const queryBuilt = buildSongQuery(query)
     const rows = db.exec(queryBuilt.sql, {
@@ -266,9 +267,11 @@ export class SongDatabase {
 
   getStats(): { songCount: number; scrapeTime: number | null } {
     const db = this.getDb()
-    const songCount = (db.exec('SELECT COUNT(*) FROM songs', {
-      returnValue: 'resultRows',
-    }) as unknown[][])[0][0] as number
+    const songCount = (
+      db.exec('SELECT COUNT(*) FROM songs', {
+        returnValue: 'resultRows',
+      }) as unknown[][]
+    )[0][0] as number
     const scrapeTimeStr = this.getMeta('scrape_ended_time')
     return {
       songCount,

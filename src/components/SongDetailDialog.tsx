@@ -52,7 +52,9 @@ export function SongDetailDialog({ song, tagList, onClose }: SongDetailDialogPro
       }
     }
     fetch()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [song])
 
   if (!song) return null
@@ -62,13 +64,11 @@ export function SongDetailDialog({ song, tagList, onClose }: SongDetailDialogPro
       <DialogContent className="max-w-2xl border-border bg-card">
         <DialogHeader>
           <div className="flex gap-4">
-            <CoverImage
-              hash={song.hash}
-              alt={song.song_name}
-              className="h-20 w-20 rounded-md"
-            />
+            <CoverImage hash={song.hash} alt={song.song_name} className="h-20 w-20 rounded-md" />
             <div className="flex-1 space-y-1">
-              <DialogTitle className="text-lg font-bold tracking-tight">{song.song_name}</DialogTitle>
+              <DialogTitle className="text-lg font-bold tracking-tight">
+                {song.song_name}
+              </DialogTitle>
               <DialogDescription className="text-sm">
                 <span className="text-muted-foreground">by </span>
                 <span className="font-medium text-foreground">{song.song_author}</span>
@@ -92,10 +92,7 @@ export function SongDetailDialog({ song, tagList, onClose }: SongDetailDialogPro
             <MetaItem label="Rating" value={`${(song.rating * 100).toFixed(1)}%`} mono />
             <MetaItem label="Upvotes" value={song.upvotes.toLocaleString()} mono />
             <MetaItem label="Downvotes" value={song.downvotes.toLocaleString()} mono />
-            <MetaItem
-              label="Uploaded"
-              value={formatIsoDateTime(song.upload_time)}
-            />
+            <MetaItem label="Uploaded" value={formatIsoDateTime(song.upload_time)} />
             <MetaItem label="Uploader" value={song.uploader_name} />
           </div>
 
@@ -109,19 +106,39 @@ export function SongDetailDialog({ song, tagList, onClose }: SongDetailDialogPro
           {/* Difficulty table */}
           {difficulties.length > 0 && (
             <div>
-              <h3 className="mb-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Difficulties</h3>
+              <h3 className="mb-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Difficulties
+              </h3>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Mode</TableHead>
-                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Diff</TableHead>
-                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">SS</TableHead>
-                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">BL</TableHead>
-                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">NJS</TableHead>
-                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Notes</TableHead>
-                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Bombs</TableHead>
-                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Walls</TableHead>
-                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Mods</TableHead>
+                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Mode
+                    </TableHead>
+                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Diff
+                    </TableHead>
+                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      SS
+                    </TableHead>
+                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      BL
+                    </TableHead>
+                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      NJS
+                    </TableHead>
+                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Notes
+                    </TableHead>
+                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Bombs
+                    </TableHead>
+                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Walls
+                    </TableHead>
+                    <TableHead className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Mods
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -133,9 +150,15 @@ export function SongDetailDialog({ song, tagList, onClose }: SongDetailDialogPro
                       <TableCell>
                         <DifficultyBadge difficulty={diff.difficulty} />
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{diff.stars_ss > 0 ? diff.stars_ss.toFixed(2) : '—'}</TableCell>
-                      <TableCell className="font-mono text-xs">{diff.stars_bl > 0 ? diff.stars_bl.toFixed(2) : '—'}</TableCell>
-                      <TableCell className="font-mono text-xs">{diff.njs > 0 ? diff.njs.toFixed(1) : '—'}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {diff.stars_ss > 0 ? diff.stars_ss.toFixed(2) : '—'}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {diff.stars_bl > 0 ? diff.stars_bl.toFixed(2) : '—'}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {diff.njs > 0 ? diff.njs.toFixed(1) : '—'}
+                      </TableCell>
                       <TableCell className="font-mono text-xs">{diff.notes}</TableCell>
                       <TableCell className="font-mono text-xs">{diff.bombs}</TableCell>
                       <TableCell className="font-mono text-xs">{diff.obstacles}</TableCell>
@@ -157,10 +180,10 @@ export function SongDetailDialog({ song, tagList, onClose }: SongDetailDialogPro
 function MetaItem({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <dt className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{label}</dt>
+      <dt className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+        {label}
+      </dt>
       <dd className={`text-sm font-medium ${mono ? 'font-mono' : ''}`}>{value}</dd>
     </div>
   )
 }
-
-

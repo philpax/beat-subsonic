@@ -30,8 +30,11 @@ export interface DatabaseState {
  */
 export function planDataLoad(
   cachedSongCount: number,
-  fetchResult: { changed: boolean; database?: { tagList: string[] } }
-): { action: 'import'; database: { tagList: string[] } } | { action: 'use-cache' } | { action: 'skip' } {
+  fetchResult: { changed: boolean; database?: { tagList: string[] } },
+):
+  | { action: 'import'; database: { tagList: string[] } }
+  | { action: 'use-cache' }
+  | { action: 'skip' } {
   if (!fetchResult.changed) {
     if (cachedSongCount > 0) {
       return { action: 'use-cache' }
@@ -77,92 +80,95 @@ export function useDatabase() {
     }
   }, [])
 
-  const load = useCallback(async (forceRefresh: boolean = false) => {
-    if (loading.current) return
-    loading.current = true
+  const load = useCallback(
+    async (forceRefresh: boolean = false) => {
+      if (loading.current) return
+      loading.current = true
 
-    try {
-      const client = getDbClient()
+      try {
+        const client = getDbClient()
 
-      setState((s) => ({ ...s, status: 'fetching', error: null }))
-      await client.init()
+        setState((s) => ({ ...s, status: 'fetching', error: null }))
+        await client.init()
 
-      const stats = await client.getStats()
+        const stats = await client.getStats()
 
-      // If we already have cached data and this isn't a forced refresh,
-      // serve from the SQLite cache immediately. GitHub raw doesn't expose
-      // ETag headers cross-origin (no Access-Control-Expose-Headers), so a
-      // conditional-request freshness check isn't possible — instead, when
-      // the cached dump is older than 24h, re-download it in the background
-      // and swap the data in when done.
-      if (!forceRefresh && stats.songCount > 0) {
+        // If we already have cached data and this isn't a forced refresh,
+        // serve from the SQLite cache immediately. GitHub raw doesn't expose
+        // ETag headers cross-origin (no Access-Control-Expose-Headers), so a
+        // conditional-request freshness check isn't possible — instead, when
+        // the cached dump is older than 24h, re-download it in the background
+        // and swap the data in when done.
+        if (!forceRefresh && stats.songCount > 0) {
+          setState({
+            status: 'ready',
+            error: null,
+            progress: null,
+            stats,
+            dataChanged: false,
+          })
+          if (isDataStale(getLastDownloadTime(), Date.now())) {
+            void refreshInBackground(client)
+          }
+          return
+        }
+
+        const result = await ensureDataLoaded((progress) => {
+          setState((s) => ({
+            ...s,
+            status: progress.stage === 'parsing' ? 'parsing' : 'fetching',
+            progress,
+          }))
+        })
+        setLastDownloadTime(Date.now())
+
+        const plan = planDataLoad(stats.songCount, result)
+
+        switch (plan.action) {
+          case 'import':
+            setState((s) => ({ ...s, status: 'importing' }))
+            const importStats = await client.importData(result.database!)
+            setState({
+              status: 'ready',
+              error: null,
+              progress: null,
+              stats: { ...importStats, tagList: plan.database.tagList },
+              dataChanged: true,
+            })
+            break
+          case 'use-cache':
+            setState({
+              status: 'ready',
+              error: null,
+              progress: null,
+              stats,
+              dataChanged: false,
+            })
+            break
+          case 'skip':
+            setState({
+              status: 'ready',
+              error: null,
+              progress: null,
+              stats,
+              dataChanged: false,
+            })
+            break
+        }
+      } catch (err) {
         setState({
-          status: 'ready',
-          error: null,
+          status: 'error',
+          error: err instanceof Error ? err.message : String(err),
           progress: null,
-          stats,
+          stats: null,
           dataChanged: false,
         })
-        if (isDataStale(getLastDownloadTime(), Date.now())) {
-          void refreshInBackground(client)
-        }
-        return
+      } finally {
+        loading.current = false
       }
-
-      const result = await ensureDataLoaded((progress) => {
-        setState((s) => ({
-          ...s,
-          status: progress.stage === 'parsing' ? 'parsing' : 'fetching',
-          progress,
-        }))
-      })
-      setLastDownloadTime(Date.now())
-
-      const plan = planDataLoad(stats.songCount, result)
-
-      switch (plan.action) {
-        case 'import':
-          setState((s) => ({ ...s, status: 'importing' }))
-          const importStats = await client.importData(result.database!)
-          setState({
-            status: 'ready',
-            error: null,
-            progress: null,
-            stats: { ...importStats, tagList: plan.database.tagList },
-            dataChanged: true,
-          })
-          break
-        case 'use-cache':
-          setState({
-            status: 'ready',
-            error: null,
-            progress: null,
-            stats,
-            dataChanged: false,
-          })
-          break
-        case 'skip':
-          setState({
-            status: 'ready',
-            error: null,
-            progress: null,
-            stats,
-            dataChanged: false,
-          })
-          break
-      }
-    } catch (err) {
-      setState({
-        status: 'error',
-        error: err instanceof Error ? err.message : String(err),
-        progress: null,
-        stats: null,
-        dataChanged: false,
-      })
-    } finally {
-      loading.current = false
-    }
-  }, [refreshInBackground])
+    },
+    [refreshInBackground],
+  )
 
   useEffect(() => {
     load()

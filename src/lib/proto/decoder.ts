@@ -21,11 +21,7 @@ export class ProtoReader {
     this.uint8 = bytes
     this.pos = offset
     this.end = offset + (length ?? bytes.length - offset)
-    this.view = new DataView(
-      bytes.buffer,
-      bytes.byteOffset,
-      bytes.byteLength
-    )
+    this.view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   }
 
   /**
@@ -124,7 +120,8 @@ export class ProtoReader {
       case 1: // fixed64
         this.pos += 8
         break
-      case 2: { // length-delimited
+      case 2: {
+        // length-delimited
         const len = this.readVarint()
         this.pos += len
         break
@@ -132,7 +129,8 @@ export class ProtoReader {
       case 5: // fixed32
         this.pos += 4
         break
-      case 3: { // start group (deprecated)
+      case 3: {
+        // start group (deprecated)
         // Skip until end group
         let tag: [number, number] | null
         while ((tag = this.readTag())) {
@@ -177,7 +175,7 @@ export function decodeMessage(
   bytes: Uint8Array,
   handler: (fieldNumber: number, wireType: number, reader: ProtoReader) => void,
   offset = 0,
-  length?: number
+  length?: number,
 ): void {
   const reader = new ProtoReader(bytes, offset, length)
   let tag: [number, number] | null

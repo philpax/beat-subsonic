@@ -88,7 +88,9 @@ export function Pagination({
       <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
         <span>{total.toLocaleString()} tracks</span>
         <span>·</span>
-        <span>{page}/{totalPages}</span>
+        <span>
+          {page}/{totalPages}
+        </span>
       </div>
       <div className="flex items-center gap-2">
         <Select

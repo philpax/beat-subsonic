@@ -59,7 +59,7 @@ function buildSubsonicWhereClause(filters: SubsonicFilters): {
     const search = filters.search.trim()
     if (search) {
       conditions.push(
-        '(title LIKE ? COLLATE NOCASE OR artist LIKE ? COLLATE NOCASE OR album LIKE ? COLLATE NOCASE)'
+        '(title LIKE ? COLLATE NOCASE OR artist LIKE ? COLLATE NOCASE OR album LIKE ? COLLATE NOCASE)',
       )
       const pattern = `%${search}%`
       params.push(pattern, pattern, pattern)

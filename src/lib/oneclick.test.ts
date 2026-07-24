@@ -25,8 +25,6 @@ describe('External URL builders', () => {
   })
 
   it('builds cover art URL from hash', () => {
-    expect(buildCoverUrl('abcdef1234567890')).toBe(
-      'https://cdn.beatsaver.com/abcdef1234567890.jpg'
-    )
+    expect(buildCoverUrl('abcdef1234567890')).toBe('https://cdn.beatsaver.com/abcdef1234567890.jpg')
   })
 })

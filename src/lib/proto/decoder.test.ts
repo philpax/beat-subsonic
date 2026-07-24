@@ -88,7 +88,7 @@ describe('ProtoReader', () => {
     const data = bytes(
       ...encodeVarintField(1, 42),
       ...encodeStringField(99, 'unknown'),
-      ...encodeVarintField(2, 99)
+      ...encodeVarintField(2, 99),
     )
     const values: Record<number, number | string> = {}
     decodeMessage(data, (fieldNumber, wireType, reader) => {

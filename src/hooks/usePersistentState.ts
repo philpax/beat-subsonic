@@ -4,7 +4,7 @@ const PREFIX = 'beatsaver-db:pref'
 
 export function usePersistentState<T>(
   key: string,
-  defaultValue: T
+  defaultValue: T,
 ): [T, (value: T | ((prev: T) => T)) => void] {
   const fullKey = `${PREFIX}:${key}`
 

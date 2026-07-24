@@ -63,6 +63,7 @@ The OneClick button triggers the `beatsaver://<hexkey>` protocol. This requires:
 - The `beatsaver://` protocol handler registered with your OS
 
 If you don't have a handler registered, use the fallback links:
+
 - **View on BeatSaver:** `https://beatsaver.com/maps/<key>`
 - **Download ZIP:** `https://beatsaver.com/api/download/key/<key>`
 

@@ -25,9 +25,7 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
 
   const toggleArray = (arr: number[] | undefined, value: number): number[] => {
     const current = arr ?? []
-    return current.includes(value)
-      ? current.filter((v) => v !== value)
-      : [...current, value]
+    return current.includes(value) ? current.filter((v) => v !== value) : [...current, value]
   }
 
   const reset = () => {
@@ -37,8 +35,15 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
   return (
     <div className="border-b bg-muted/20 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Filters</h3>
-        <Button variant="ghost" size="sm" onClick={reset} className="h-6 gap-1 text-[10px] text-muted-foreground">
+        <h3 className="font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          Filters
+        </h3>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={reset}
+          className="h-6 gap-1 text-[10px] text-muted-foreground"
+        >
           <X className="h-3 w-3" />
           Clear
         </Button>
@@ -264,7 +269,9 @@ export function FilterPanel({ tagList, filters, onFiltersChange }: FilterPanelPr
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
-      <h4 className="font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{title}</h4>
+      <h4 className="font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        {title}
+      </h4>
       <div className="space-y-1">{children}</div>
     </div>
   )

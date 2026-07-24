@@ -14,10 +14,7 @@ import {
   type TrackKey,
 } from '../src/lib/matching/matcher'
 import { fuzzyMatch } from '../src/lib/matching/fuzzy'
-import {
-  stripAlbumParentheses,
-  stripSuperfluousWords,
-} from '../src/lib/matching/normalize'
+import { stripAlbumParentheses, stripSuperfluousWords } from '../src/lib/matching/normalize'
 
 interface BeatSaverSong {
   map_id: number
@@ -35,8 +32,12 @@ interface SubsonicTrack {
 }
 
 function main() {
-  const songs: BeatSaverSong[] = JSON.parse(readFileSync(process.argv[2] ?? 'tmp/beatsaver-songs.json', 'utf-8'))
-  const tracks: SubsonicTrack[] = JSON.parse(readFileSync(process.argv[3] ?? 'tmp/subsonic-tracks.json', 'utf-8'))
+  const songs: BeatSaverSong[] = JSON.parse(
+    readFileSync(process.argv[2] ?? 'tmp/beatsaver-songs.json', 'utf-8'),
+  )
+  const tracks: SubsonicTrack[] = JSON.parse(
+    readFileSync(process.argv[3] ?? 'tmp/subsonic-tracks.json', 'utf-8'),
+  )
 
   const searchTerms = [
     'Let Me Remain',
@@ -79,7 +80,9 @@ function main() {
 
     console.log(`  Found ${matchingMaps.length} matching maps (threshold 0.8):`)
     for (const m of matchingMaps.slice(0, 5)) {
-      console.log(`    [${(m.score * 100).toFixed(0)}%] "${m.song.song_name}" by ${m.song.song_author} (mapper: ${m.song.level_author})`)
+      console.log(
+        `    [${(m.score * 100).toFixed(0)}%] "${m.song.song_name}" by ${m.song.song_author} (mapper: ${m.song.level_author})`,
+      )
       console.log(`      map artist variants: ${JSON.stringify(m.mapKey.artistVariants)}`)
       console.log(`      map title variants: ${JSON.stringify(m.mapKey.titleVariants)}`)
 

@@ -24,7 +24,11 @@ function main() {
   let t0 = performance.now()
   const mapKeys: MapKey[] = songs.map((s: any, i: number) => ({
     index: i,
-    ...buildMapKey({ levelAuthor: s.level_author, songAuthor: s.song_author, songName: s.song_name }),
+    ...buildMapKey({
+      levelAuthor: s.level_author,
+      songAuthor: s.song_author,
+      songName: s.song_name,
+    }),
   }))
   const trackKeys: TrackKey[] = tracks.map((t: any, i: number) => ({
     index: i,

@@ -114,12 +114,8 @@ describe('buildMatchIndex', () => {
 
 describe('matchAllTracks', () => {
   it('matches tracks to maps with exact title + artist match', () => {
-    const tracks: TrackKey[] = [
-      makeTrackKey(0, 'Camellia', 'Body F10ating10'),
-    ]
-    const maps: MapKey[] = [
-      makeMapKey(0, 'Camellia', 'Body F10ating10'),
-    ]
+    const tracks: TrackKey[] = [makeTrackKey(0, 'Camellia', 'Body F10ating10')]
+    const maps: MapKey[] = [makeMapKey(0, 'Camellia', 'Body F10ating10')]
 
     const results = matchAllTracks(tracks, maps, 0.8)
     expect(results).toHaveLength(1)
@@ -128,12 +124,8 @@ describe('matchAllTracks', () => {
   })
 
   it('matches via contains relationship in both title and artist', () => {
-    const tracks: TrackKey[] = [
-      makeTrackKey(0, 'Camellia', 'Body'),
-    ]
-    const maps: MapKey[] = [
-      makeMapKey(0, 'Camellia', 'Body F10ating10'),
-    ]
+    const tracks: TrackKey[] = [makeTrackKey(0, 'Camellia', 'Body')]
+    const maps: MapKey[] = [makeMapKey(0, 'Camellia', 'Body F10ating10')]
 
     const results = matchAllTracks(tracks, maps, 0.8)
     expect(results).toHaveLength(1)
@@ -141,12 +133,8 @@ describe('matchAllTracks', () => {
   })
 
   it('matches BeatSaver map to Subsonic track (Camellia)', () => {
-    const tracks: TrackKey[] = [
-      makeTrackKey(0, 'Camellia', 'Body F10ating10'),
-    ]
-    const maps: MapKey[] = [
-      makeMapKey(0, 'Camellia', 'Body F10ating10'),
-    ]
+    const tracks: TrackKey[] = [makeTrackKey(0, 'Camellia', 'Body F10ating10')]
+    const maps: MapKey[] = [makeMapKey(0, 'Camellia', 'Body F10ating10')]
 
     const results = matchAllTracks(tracks, maps, 0.8)
     expect(results).toHaveLength(1)
@@ -154,12 +142,8 @@ describe('matchAllTracks', () => {
   })
 
   it('matches Crab Rave with OmaruPoko', () => {
-    const tracks: TrackKey[] = [
-      makeTrackKey(0, 'OmaruPoko', 'Crab Rave'),
-    ]
-    const maps: MapKey[] = [
-      makeMapKey(0, 'OmaruPoko', 'Crab Rave'),
-    ]
+    const tracks: TrackKey[] = [makeTrackKey(0, 'OmaruPoko', 'Crab Rave')]
+    const maps: MapKey[] = [makeMapKey(0, 'OmaruPoko', 'Crab Rave')]
 
     const results = matchAllTracks(tracks, maps, 0.8)
     expect(results).toHaveLength(1)
@@ -167,24 +151,16 @@ describe('matchAllTracks', () => {
   })
 
   it('does not match when title matches but artist does not', () => {
-    const tracks: TrackKey[] = [
-      makeTrackKey(0, 'Completely Different Artist', 'Body F10ating10'),
-    ]
-    const maps: MapKey[] = [
-      makeMapKey(0, 'Camellia', 'Body F10ating10'),
-    ]
+    const tracks: TrackKey[] = [makeTrackKey(0, 'Completely Different Artist', 'Body F10ating10')]
+    const maps: MapKey[] = [makeMapKey(0, 'Camellia', 'Body F10ating10')]
 
     const results = matchAllTracks(tracks, maps, 0.8)
     expect(results).toHaveLength(0)
   })
 
   it('does not match completely different tracks', () => {
-    const tracks: TrackKey[] = [
-      makeTrackKey(0, 'Unknown Artist', 'Unknown Song'),
-    ]
-    const maps: MapKey[] = [
-      makeMapKey(0, 'Other Artist', 'Other Song'),
-    ]
+    const tracks: TrackKey[] = [makeTrackKey(0, 'Unknown Artist', 'Unknown Song')]
+    const maps: MapKey[] = [makeMapKey(0, 'Other Artist', 'Other Song')]
 
     const results = matchAllTracks(tracks, maps, 0.8)
     expect(results).toHaveLength(0)
@@ -192,12 +168,8 @@ describe('matchAllTracks', () => {
 
   it('does not match All India Radio with Allison (false positive)', () => {
     // This was a false positive in the old algorithm
-    const tracks: TrackKey[] = [
-      makeTrackKey(0, 'All India Radio', 'Let Me Remain'),
-    ]
-    const maps: MapKey[] = [
-      makeMapKey(0, 'Allison and drameko', 'Pumpernickel'),
-    ]
+    const tracks: TrackKey[] = [makeTrackKey(0, 'All India Radio', 'Let Me Remain')]
+    const maps: MapKey[] = [makeMapKey(0, 'Allison and drameko', 'Pumpernickel')]
 
     const results = matchAllTracks(tracks, maps, 0.8)
     expect(results).toHaveLength(0)
@@ -208,9 +180,7 @@ describe('matchAllTracks', () => {
       makeTrackKey(0, 'Camellia', 'Body F10ating10'),
       makeTrackKey(1, 'Unknown', 'Unknown'),
     ]
-    const maps: MapKey[] = [
-      makeMapKey(0, 'Camellia', 'Body F10ating10'),
-    ]
+    const maps: MapKey[] = [makeMapKey(0, 'Camellia', 'Body F10ating10')]
 
     const results = matchAllTracks(tracks, maps, 0.8)
     expect(results).toHaveLength(1)
@@ -218,9 +188,7 @@ describe('matchAllTracks', () => {
   })
 
   it('matches multiple maps to a single track', () => {
-    const tracks: TrackKey[] = [
-      makeTrackKey(0, 'Camellia', 'Body F10ating10'),
-    ]
+    const tracks: TrackKey[] = [makeTrackKey(0, 'Camellia', 'Body F10ating10')]
     const maps: MapKey[] = [
       makeMapKey(0, 'Camellia', 'Body F10ating10'),
       makeMapKey(1, 'Camellia', 'Body F10ating10'),

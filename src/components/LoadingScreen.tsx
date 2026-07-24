@@ -44,12 +44,8 @@ export function LoadingScreen({ status, error, progress }: LoadingScreenProps) {
       <div className="w-full max-w-sm space-y-6">
         {/* Wordmark */}
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">
-            BeatSubsonic
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            BeatSaver map database
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">BeatSubsonic</h1>
+          <p className="text-xs text-muted-foreground">BeatSaver map database</p>
         </div>
 
         {/* Saber ignition bar */}
@@ -65,9 +61,7 @@ export function LoadingScreen({ status, error, progress }: LoadingScreenProps) {
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground">
-          First load downloads ~13 MB of map data.
-        </p>
+        <p className="text-xs text-muted-foreground">First load downloads ~13 MB of map data.</p>
       </div>
     </div>
   )

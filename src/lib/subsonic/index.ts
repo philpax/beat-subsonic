@@ -7,11 +7,7 @@ export type {
   Search3Request,
   Search3Response,
 } from './types'
-export {
-  parseSearch3Response,
-  isSubsonicResponseOk,
-  getSubsonicError,
-} from './types'
+export { parseSearch3Response, isSubsonicResponseOk, getSubsonicError } from './types'
 export {
   generateSalt,
   computeToken,

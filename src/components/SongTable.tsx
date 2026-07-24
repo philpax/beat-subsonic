@@ -2,11 +2,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef, useState, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import {
-  Search,
-  SlidersHorizontal,
-  Zap,
-} from 'lucide-react'
+import { Search, SlidersHorizontal, Zap } from 'lucide-react'
 import { useSongQuery } from '@/hooks/useSongQuery'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { FilterPanel } from '@/components/FilterPanel'
@@ -15,10 +11,7 @@ import { SongDetailDialog } from '@/components/SongDetailDialog'
 import { SortHeader, Pagination, formatDuration, formatIsoDate } from '@/components/table-shared'
 import { buildOneClickUrl } from '@/lib/types'
 import type { SongFilters, SortKey } from '@/lib/db/queries'
-import {
-  RankedStates,
-  isRankedSet,
-} from '@/lib/proto/enums'
+import { RankedStates, isRankedSet } from '@/lib/proto/enums'
 import type { SongRow } from '@/lib/types'
 
 interface SongTableProps {
@@ -79,14 +72,17 @@ export function SongTable({ tagList }: SongTableProps) {
     overscan: 10,
   })
 
-  const handleSortClick = useCallback((key: SortKey) => {
-    if (sort === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSort(key)
-      setSortDir('desc')
-    }
-  }, [sort])
+  const handleSortClick = useCallback(
+    (key: SortKey) => {
+      if (sort === key) {
+        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+      } else {
+        setSort(key)
+        setSortDir('desc')
+      }
+    },
+    [sort],
+  )
 
   return (
     <div className="flex h-full flex-col">
@@ -131,9 +127,7 @@ export function SongTable({ tagList }: SongTableProps) {
       )}
 
       {/* Error state */}
-      {error && (
-        <div className="py-2 text-sm text-destructive">{error.message}</div>
-      )}
+      {error && <div className="py-2 text-sm text-destructive">{error.message}</div>}
 
       {/* Table */}
       <div className="flex-1 overflow-auto" ref={tableContainerRef}>
@@ -141,15 +135,73 @@ export function SongTable({ tagList }: SongTableProps) {
           {/* Header */}
           <div className="sticky top-0 z-10 flex border-b bg-background">
             <div className="w-10 shrink-0" />
-            <SortHeader label="Song" sortKey="song_name" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="flex-1" />
-            <SortHeader label="Author" sortKey="song_author" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-36 shrink-0" />
-            <SortHeader label="Mapper" sortKey="level_author" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-36 shrink-0" />
-            <SortHeader label="BPM" sortKey="bpm" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-12 shrink-0" />
-            <SortHeader label="Dur" sortKey="duration" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-12 shrink-0" />
-            <SortHeader label="Rating" sortKey="rating" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-14 shrink-0" />
-            <SortHeader label="Ranked" sortKey="ranked_states" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-14 shrink-0" />
-            <SortHeader label="Uploaded" sortKey="upload_time" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-24 shrink-0" />
-            <div className="w-20 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Install</div>
+            <SortHeader
+              label="Song"
+              sortKey="song_name"
+              currentSort={sort}
+              sortDir={sortDir}
+              onClick={handleSortClick}
+              className="flex-1"
+            />
+            <SortHeader
+              label="Author"
+              sortKey="song_author"
+              currentSort={sort}
+              sortDir={sortDir}
+              onClick={handleSortClick}
+              className="w-36 shrink-0"
+            />
+            <SortHeader
+              label="Mapper"
+              sortKey="level_author"
+              currentSort={sort}
+              sortDir={sortDir}
+              onClick={handleSortClick}
+              className="w-36 shrink-0"
+            />
+            <SortHeader
+              label="BPM"
+              sortKey="bpm"
+              currentSort={sort}
+              sortDir={sortDir}
+              onClick={handleSortClick}
+              className="w-12 shrink-0"
+            />
+            <SortHeader
+              label="Dur"
+              sortKey="duration"
+              currentSort={sort}
+              sortDir={sortDir}
+              onClick={handleSortClick}
+              className="w-12 shrink-0"
+            />
+            <SortHeader
+              label="Rating"
+              sortKey="rating"
+              currentSort={sort}
+              sortDir={sortDir}
+              onClick={handleSortClick}
+              className="w-14 shrink-0"
+            />
+            <SortHeader
+              label="Ranked"
+              sortKey="ranked_states"
+              currentSort={sort}
+              sortDir={sortDir}
+              onClick={handleSortClick}
+              className="w-14 shrink-0"
+            />
+            <SortHeader
+              label="Uploaded"
+              sortKey="upload_time"
+              currentSort={sort}
+              sortDir={sortDir}
+              onClick={handleSortClick}
+              className="w-24 shrink-0"
+            />
+            <div className="w-20 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              Install
+            </div>
           </div>
 
           {/* Virtual rows */}
@@ -158,9 +210,7 @@ export function SongTable({ tagList }: SongTableProps) {
           ) : songs.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">No songs found</div>
           ) : (
-            <div
-              style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}
-            >
+            <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
               {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                 const song = songs[virtualRow.index]
                 if (!song) return null
@@ -192,11 +242,21 @@ export function SongTable({ tagList }: SongTableProps) {
                       />
                     </div>
                     <div className="flex-1 truncate px-2 text-sm font-medium">{song.song_name}</div>
-                    <div className="w-36 shrink-0 truncate px-2 text-xs text-muted-foreground">{song.song_author}</div>
-                    <div className="w-36 shrink-0 truncate px-2 text-xs text-muted-foreground">{song.level_author}</div>
-                    <div className="w-12 shrink-0 px-2 font-mono text-sm">{song.bpm.toFixed(0)}</div>
-                    <div className="w-12 shrink-0 px-2 font-mono text-sm text-muted-foreground">{formatDuration(song.duration)}</div>
-                    <div className="w-14 shrink-0 px-2 font-mono text-sm">{(song.rating * 100).toFixed(0)}%</div>
+                    <div className="w-36 shrink-0 truncate px-2 text-xs text-muted-foreground">
+                      {song.song_author}
+                    </div>
+                    <div className="w-36 shrink-0 truncate px-2 text-xs text-muted-foreground">
+                      {song.level_author}
+                    </div>
+                    <div className="w-12 shrink-0 px-2 font-mono text-sm">
+                      {song.bpm.toFixed(0)}
+                    </div>
+                    <div className="w-12 shrink-0 px-2 font-mono text-sm text-muted-foreground">
+                      {formatDuration(song.duration)}
+                    </div>
+                    <div className="w-14 shrink-0 px-2 font-mono text-sm">
+                      {(song.rating * 100).toFixed(0)}%
+                    </div>
                     <div className="w-14 shrink-0 px-2">
                       <div className="flex gap-1">
                         {isRankedSet(song.ranked_states, RankedStates.ScoresaberRanked) && (
@@ -236,7 +296,10 @@ export function SongTable({ tagList }: SongTableProps) {
         page={page}
         pageSize={pageSize}
         onPageChange={setPage}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1) }}
+        onPageSizeChange={(size) => {
+          setPageSize(size)
+          setPage(1)
+        }}
       />
 
       {/* Song detail dialog */}
