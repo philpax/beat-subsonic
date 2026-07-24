@@ -2,9 +2,9 @@ import { useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { OneClickButton } from '@/components/OneClickButton'
 import { SongDetailDialog } from '@/components/SongDetailDialog'
-import { useMatchData } from '@/hooks/useMatchData'
+import { useMatchData, type MatchedMap } from '@/hooks/useMatchData'
 import { usePersistentState } from '@/hooks/usePersistentState'
-import { Pagination, formatDuration, formatIsoDate } from '@/components/table-shared'
+import { Pagination, SortHeader, formatDuration, formatIsoDate } from '@/components/table-shared'
 import { RankedStates, isRankedSet } from '@/lib/proto/enums'
 import type { SongRow } from '@/lib/types'
 import { ChevronDown, ChevronRight, Loader2, AlertCircle, Search, Zap } from 'lucide-react'
@@ -13,6 +13,47 @@ import { cn } from '@/lib/utils'
 
 const PAGE_SIZE_DEFAULT = 50
 
+/** Sortable columns of the expanded per-track match table. */
+type MatchSortKey =
+  | 'song_name'
+  | 'song_author'
+  | 'level_author'
+  | 'bpm'
+  | 'duration'
+  | 'rating'
+  | 'ranked'
+  | 'upload_time'
+  | 'score'
+
+function compareMatches(a: MatchedMap, b: MatchedMap, key: MatchSortKey): number {
+  switch (key) {
+    case 'song_name':
+      return a.song.song_name.localeCompare(b.song.song_name)
+    case 'song_author':
+      return a.song.song_author.localeCompare(b.song.song_author)
+    case 'level_author':
+      return a.song.level_author.localeCompare(b.song.level_author)
+    case 'bpm':
+      return a.song.bpm - b.song.bpm
+    case 'duration':
+      return a.song.duration - b.song.duration
+    case 'rating':
+      return a.song.rating - b.song.rating
+    case 'ranked':
+      return a.song.ranked_states - b.song.ranked_states
+    case 'upload_time':
+      return a.song.upload_time - b.song.upload_time
+    case 'score':
+      return a.score - b.score
+  }
+}
+
+function sortMatches(matches: MatchedMap[], key: MatchSortKey, dir: 'asc' | 'desc'): MatchedMap[] {
+  const sorted = [...matches].sort((a, b) => compareMatches(a, b, key))
+  if (dir === 'desc') sorted.reverse()
+  return sorted
+}
+
 interface MatchViewProps {
   tagList: string[]
 }
@@ -20,6 +61,19 @@ interface MatchViewProps {
 export function MatchView({ tagList }: MatchViewProps) {
   const { state, threshold, runMatch, updateThreshold } = useMatchData()
   const [selectedSong, setSelectedSong] = useState<SongRow | null>(null)
+  const [matchSort, setMatchSort] = useState<MatchSortKey>('score')
+  const [matchSortDir, setMatchSortDir] = useState<'asc' | 'desc'>('desc')
+
+  const handleMatchSortClick = useCallback((key: MatchSortKey) => {
+    setMatchSort((current) => {
+      if (current === key) {
+        setMatchSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+        return current
+      }
+      setMatchSortDir('desc')
+      return key
+    })
+  }, [])
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -280,18 +334,18 @@ export function MatchView({ tagList }: MatchViewProps) {
                       {/* Column header */}
                       <div className="flex items-center border-b border-border/30 pl-8">
                         <div className="w-10 shrink-0" />
-                        <div className="flex-1 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Song</div>
-                        <div className="w-32 shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Author</div>
-                        <div className="w-32 shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Mapper</div>
-                        <div className="w-12 shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">BPM</div>
-                        <div className="w-12 shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Dur</div>
-                        <div className="w-14 shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Rating</div>
-                        <div className="w-14 shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Ranked</div>
-                        <div className="w-24 shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Uploaded</div>
-                        <div className="w-14 shrink-0 px-2 py-1 text-right font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Score</div>
+                        <SortHeader label="Song" sortKey="song_name" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="flex-1" />
+                        <SortHeader label="Author" sortKey="song_author" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-32" />
+                        <SortHeader label="Mapper" sortKey="level_author" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-32" />
+                        <SortHeader label="BPM" sortKey="bpm" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-12" />
+                        <SortHeader label="Dur" sortKey="duration" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-12" />
+                        <SortHeader label="Rating" sortKey="rating" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-14" />
+                        <SortHeader label="Ranked" sortKey="ranked" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-14" />
+                        <SortHeader label="Uploaded" sortKey="upload_time" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-24" />
+                        <SortHeader label="Score" sortKey="score" currentSort={matchSort} sortDir={matchSortDir} onClick={handleMatchSortClick} className="w-14" />
                         <div className="w-24 shrink-0 px-2 py-1" />
                       </div>
-                      {result.matches.map((match) => (
+                      {sortMatches(result.matches, matchSort, matchSortDir).map((match) => (
                         <div
                           key={match.song.map_id}
                           onClick={() => setSelectedSong(match.song)}
