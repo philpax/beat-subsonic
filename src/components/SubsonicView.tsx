@@ -8,9 +8,42 @@ import { usePersistentState } from '@/hooks/usePersistentState'
 import { SortHeader, Pagination } from '@/components/table-shared'
 import { formatDuration, formatIsoDateTimeMs } from '@/lib/format'
 import type { SubsonicSortKey } from '@/lib/subsonic/queries'
-import { RefreshCw, Search, Music, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
+import {
+  RefreshCw,
+  Search,
+  Music,
+  CheckCircle2,
+  Loader2,
+  AlertCircle,
+  ShieldAlert,
+} from 'lucide-react'
 
 const PAGE_SIZE_DEFAULT = 100
+
+/**
+ * Mixed-content notice, shown only when the app itself was loaded over
+ * HTTPS: an HTTPS page cannot connect to a plain-http Subsonic server
+ * (browsers block mixed content). An HTTP page can connect to either
+ * scheme, so no notice is needed there.
+ */
+function ConnectionSchemeNotice() {
+  if (window.location.protocol !== 'https:') return null
+
+  const httpUrl = `http://${window.location.host}${window.location.pathname}${window.location.hash}`
+  return (
+    <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+      <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-primary" />
+      <span>
+        Loaded over HTTPS — browsers block mixed content, so only <code>https://</code> Subsonic
+        servers will work. For a plain-http server, use{' '}
+        <a href={httpUrl} className="underline hover:text-foreground">
+          the http:// version
+        </a>
+        .
+      </span>
+    </div>
+  )
+}
 
 export function SubsonicView() {
   const { state, updateCredentials, connect, refresh } = useSubsonic()
@@ -160,6 +193,8 @@ export function SubsonicView() {
             </span>
           )}
         </div>
+
+        <ConnectionSchemeNotice />
       </div>
 
       {/* Toolbar */}
