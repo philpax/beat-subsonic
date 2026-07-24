@@ -19,7 +19,7 @@ import {
 const PAGE_SIZE_DEFAULT = 100
 
 export function SubsonicView() {
-  const { state, updateCredentials, connect, fetchTracks, refresh } = useSubsonic()
+  const { state, updateCredentials, connect, refresh } = useSubsonic()
 
   // Search state
   const [search, setSearch] = useState('')
@@ -123,32 +123,20 @@ export function SubsonicView() {
             />
           </div>
           <Button
-            variant="outline"
-            size="sm"
-            onClick={connect}
-            disabled={state.status === 'connecting'}
-            className="h-8"
-          >
-            {state.status === 'connecting' ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : state.status === 'connected' ? (
-              <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-            ) : null}
-            Connect
-          </Button>
-          <Button
             variant="default"
             size="sm"
-            onClick={fetchTracks}
-            disabled={state.status !== 'connected' && state.status !== 'fetching'}
+            onClick={connect}
+            disabled={state.status === 'connecting' || state.status === 'fetching'}
             className="h-8"
           >
-            {state.status === 'fetching' ? (
+            {state.status === 'connecting' || state.status === 'fetching' ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : state.status === 'connected' ? (
+              <CheckCircle2 className="h-3.5 w-3.5" />
             ) : (
               <Music className="h-3.5 w-3.5" />
             )}
-            Fetch All Tracks
+            {state.status === 'fetching' ? 'Fetching…' : 'Connect'}
           </Button>
           {state.stats && state.stats.trackCount > 0 && (
             <Button variant="ghost" size="sm" onClick={refresh} className="h-8">

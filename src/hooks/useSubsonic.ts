@@ -65,41 +65,13 @@ export function useSubsonic() {
     setCredentials(creds)
   }, [])
 
-  const connect = useCallback(async () => {
-    if (!credentials.baseUrl || !credentials.username || !credentials.password) {
-      setError('Please fill in all fields')
-      setStatus('error')
-      return
-    }
-
-    setStatus('connecting')
-    setError(null)
-
-    try {
-      const client = new SubsonicClient(credentials.baseUrl, credentials.username, credentials.password)
-      await client.ping()
-      clientRef.current = client
-      setStatus('connected')
-      setError(null)
-    } catch (err) {
-      setStatus('error')
-      setError(err instanceof Error ? err.message : String(err))
-    }
-  }, [credentials])
-
-  const fetchTracks = useCallback(async () => {
-    if (!clientRef.current) {
-      setError('Not connected')
-      setStatus('error')
-      return
-    }
-
+  const fetchTracks = useCallback(async (client: SubsonicClient) => {
     setStatus('fetching')
     setError(null)
     setFetchProgress(null)
 
     try {
-      const result = await fetchAllSubsonicData(clientRef.current, (fetched, total) => {
+      const result = await fetchAllSubsonicData(client, (fetched, total) => {
         setFetchProgress({ fetched, total })
       })
 
@@ -120,12 +92,35 @@ export function useSubsonic() {
     }
   }, [queryClient])
 
-  const refresh = useCallback(async () => {
-    if (!clientRef.current && credentials.baseUrl) {
-      await connect()
+  /** Connect to the server and immediately fetch the full library. */
+  const connect = useCallback(async () => {
+    if (!credentials.baseUrl || !credentials.username || !credentials.password) {
+      setError('Please fill in all fields')
+      setStatus('error')
+      return
     }
+
+    setStatus('connecting')
+    setError(null)
+
+    try {
+      const client = new SubsonicClient(credentials.baseUrl, credentials.username, credentials.password)
+      await client.ping()
+      clientRef.current = client
+    } catch (err) {
+      setStatus('error')
+      setError(err instanceof Error ? err.message : String(err))
+      return
+    }
+
+    await fetchTracks(clientRef.current)
+  }, [credentials, fetchTracks])
+
+  const refresh = useCallback(async () => {
     if (clientRef.current) {
-      await fetchTracks()
+      await fetchTracks(clientRef.current)
+    } else if (credentials.baseUrl) {
+      await connect()
     }
   }, [connect, fetchTracks, credentials.baseUrl])
 
@@ -139,7 +134,6 @@ export function useSubsonic() {
     },
     updateCredentials,
     connect,
-    fetchTracks,
     refresh,
   }
 }
