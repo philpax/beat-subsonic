@@ -12,6 +12,11 @@ import { SCHEMA_SQL_SUBSONIC } from '../db/schema.sql'
 import type { SqliteDb } from '../db/song-database'
 import type { Child } from './types'
 import { normalizeForMatching } from '../matching/normalize'
+import {
+  buildSubsonicQuery,
+  buildSubsonicCountQuery,
+  type SubsonicQuery,
+} from './queries'
 
 // ---- Pure functions (Functional Core) ----
 
@@ -122,6 +127,27 @@ export class SubsonicDatabase {
       'SELECT id, title, artist, album, normalized_key FROM subsonic_tracks ORDER BY artist, title',
       { returnValue: 'resultRows', rowMode: 'object' }
     ) as unknown as SubsonicTrackRow[]
+  }
+
+  /** Query tracks with filters, sorting, and pagination. */
+  queryTracks(query: SubsonicQuery): { rows: Record<string, unknown>[]; total: number } {
+    const db = this.getDb()
+    const filters = query.filters ?? {}
+
+    const countBuilt = buildSubsonicCountQuery(filters)
+    const total = (db.exec(countBuilt.sql, {
+      bind: countBuilt.params,
+      returnValue: 'resultRows',
+    }) as unknown[][])[0][0] as number
+
+    const queryBuilt = buildSubsonicQuery(query)
+    const rows = db.exec(queryBuilt.sql, {
+      bind: queryBuilt.params,
+      returnValue: 'resultRows',
+      rowMode: 'object',
+    }) as Record<string, unknown>[]
+
+    return { rows, total }
   }
 
   /** Get total track count. */

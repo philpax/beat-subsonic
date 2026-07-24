@@ -30,3 +30,11 @@ export {
   type SubsonicTrackRow,
   type SubsonicStats,
 } from './db'
+export {
+  buildSubsonicQuery,
+  buildSubsonicCountQuery,
+  type SubsonicQuery,
+  type SubsonicFilters,
+  type SubsonicSortKey,
+  type SubsonicBuiltQuery,
+} from './queries'

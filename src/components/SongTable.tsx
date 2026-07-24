@@ -2,14 +2,9 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef, useState, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Select } from '@/components/ui/select'
 import {
-  ChevronLeft,
-  ChevronRight,
   Search,
   SlidersHorizontal,
-  ChevronUp,
-  ChevronDown,
   Zap,
 } from 'lucide-react'
 import { useSongQuery } from '@/hooks/useSongQuery'
@@ -17,6 +12,7 @@ import { usePersistentState } from '@/hooks/usePersistentState'
 import { FilterPanel } from '@/components/FilterPanel'
 import { SortControl } from '@/components/SortControl'
 import { SongDetailDialog } from '@/components/SongDetailDialog'
+import { SortHeader, Pagination, formatDuration } from '@/components/table-shared'
 import { buildOneClickUrl } from '@/lib/types'
 import type { SongFilters, SortKey } from '@/lib/db/queries'
 import {
@@ -73,7 +69,6 @@ export function SongTable({ tagList }: SongTableProps) {
 
   const songs = (data?.rows ?? []) as unknown as SongRow[]
   const total = data?.total ?? 0
-  const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   // Virtual scrolling for the table body
   const tableContainerRef = useRef<HTMLDivElement>(null)
@@ -240,45 +235,13 @@ export function SongTable({ tagList }: SongTableProps) {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between border-t py-1.5">
-        <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-          <span>{total.toLocaleString()} songs</span>
-          <span>·</span>
-          <span>{page}/{totalPages}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select
-            value={String(pageSize)}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value))
-              setPage(1)
-            }}
-            className="h-7 w-16 text-xs"
-          >
-            <option value="50">50</option>
-            <option value="100">100</option>
-            <option value="200">200</option>
-          </Select>
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="h-7 w-7"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="h-7 w-7"
-          >
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </div>
+      <Pagination
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => { setPageSize(size); setPage(1) }}
+      />
 
       {/* Song detail dialog */}
       <SongDetailDialog
@@ -286,41 +249,6 @@ export function SongTable({ tagList }: SongTableProps) {
         tagList={tagList}
         onClose={() => setSelectedSong(null)}
       />
-    </div>
-  )
-}
-
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
-
-interface SortHeaderProps {
-  label: string
-  sortKey: SortKey
-  currentSort: SortKey
-  sortDir: 'asc' | 'desc'
-  onClick: (key: SortKey) => void
-  className?: string
-}
-
-function SortHeader({ label, sortKey, currentSort, sortDir, onClick, className }: SortHeaderProps) {
-  const isActive = currentSort === sortKey
-  return (
-    <div className={`shrink-0 px-2 py-2 ${className ?? ''}`}>
-      <button
-        onClick={() => onClick(sortKey)}
-        className={`flex items-center gap-0.5 font-mono text-[10px] font-medium uppercase tracking-wider transition-colors hover:text-foreground ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
-      >
-        {label}
-        {isActive &&
-          (sortDir === 'asc' ? (
-            <ChevronUp className="h-2.5 w-2.5" />
-          ) : (
-            <ChevronDown className="h-2.5 w-2.5" />
-          ))}
-      </button>
     </div>
   )
 }

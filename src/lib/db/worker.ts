@@ -60,6 +60,11 @@ self.onmessage = async (event: MessageEvent) => {
       case 'subsonic-tracks':
         result = subsonicDb.getAllTracks()
         break
+      case 'subsonic-query': {
+        const subsonicQuery = payload as import('../subsonic/queries').SubsonicQuery
+        result = subsonicDb.queryTracks(subsonicQuery)
+        break
+      }
       case 'subsonic-stats':
         result = subsonicDb.getStats()
         break

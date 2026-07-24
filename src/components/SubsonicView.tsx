@@ -1,58 +1,77 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useSubsonic } from '@/hooks/useSubsonic'
-import { getDbClient } from '@/lib/db/client'
-import type { SubsonicTrackRow } from '@/lib/subsonic/db'
-import { RefreshCw, Search, Music, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
+import { useSubsonicQuery } from '@/hooks/useSubsonicQuery'
+import { usePersistentState } from '@/hooks/usePersistentState'
+import { SortHeader, Pagination, formatDuration } from '@/components/table-shared'
+import type { SubsonicSortKey } from '@/lib/subsonic/queries'
+import {
+  RefreshCw,
+  Search,
+  Music,
+  CheckCircle2,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react'
+
+const PAGE_SIZE_DEFAULT = 100
 
 export function SubsonicView() {
   const { state, updateCredentials, connect, fetchTracks, refresh } = useSubsonic()
-  const [tracks, setTracks] = useState<SubsonicTrackRow[]>([])
+
+  // Search state
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
-  // Load tracks from DB
-  const loadTracks = useCallback(async () => {
-    try {
-      const dbClient = getDbClient()
-      await dbClient.init()
-      const allTracks = await dbClient.subsonicGetTracks()
-      setTracks(allTracks)
-    } catch {
-      // ignore
-    }
-  }, [])
+  // Sort state
+  const [sort, setSort] = usePersistentState<SubsonicSortKey>('subsonic-sort', 'artist')
+  const [sortDir, setSortDir] = usePersistentState<'asc' | 'desc'>('subsonic-sortDir', 'asc')
 
-  useEffect(() => {
-    loadTracks()
-  }, [loadTracks, state.stats])
+  // Pagination state
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = usePersistentState<number>('subsonic-pageSize', PAGE_SIZE_DEFAULT)
 
   // Debounce search
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value)
     if (searchTimer.current) clearTimeout(searchTimer.current)
-    searchTimer.current = setTimeout(() => setDebouncedSearch(value), 300)
+    searchTimer.current = setTimeout(() => {
+      setDebouncedSearch(value)
+      setPage(1)
+    }, 300)
   }, [])
 
-  const filteredTracks = debouncedSearch
-    ? tracks.filter(
-        (t) =>
-          t.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          t.artist.toLowerCase().includes(debouncedSearch.toLowerCase())
-      )
-    : tracks
+  const { data, isLoading, error } = useSubsonicQuery({
+    search: debouncedSearch,
+    sort,
+    sortDir,
+    page,
+    pageSize,
+  })
+
+  const tracks = data?.rows ?? []
+  const total = data?.total ?? 0
 
   // Virtual scrolling
   const tableContainerRef = useRef<HTMLDivElement>(null)
   const rowVirtualizer = useVirtualizer({
-    count: filteredTracks.length,
+    count: tracks.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 40,
+    estimateSize: () => 44,
     overscan: 10,
   })
+
+  const handleSortClick = useCallback((key: SubsonicSortKey) => {
+    if (sort === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSort(key)
+      setSortDir('asc')
+    }
+  }, [sort])
 
   const fetchedDate = state.stats?.fetchedAt
     ? new Date(state.stats.fetchedAt).toLocaleString('en-US', {
@@ -168,9 +187,9 @@ export function SubsonicView() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center gap-2 border-b py-2 px-3">
-        <div className="relative flex-1">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-2 border-b py-2 px-3">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search tracks…"
@@ -179,42 +198,44 @@ export function SubsonicView() {
             className="h-8 pl-8 text-sm"
           />
         </div>
-        <span className="font-mono text-xs text-muted-foreground">
-          {filteredTracks.length.toLocaleString()} tracks
-        </span>
       </div>
 
-      {/* Track list */}
+      {/* Error state */}
+      {error && (
+        <div className="py-2 px-3 text-sm text-destructive">{error}</div>
+      )}
+
+      {/* Table */}
       <div className="flex-1 overflow-auto" ref={tableContainerRef}>
-        {filteredTracks.length === 0 ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">
-            {tracks.length === 0
-              ? 'No tracks cached. Connect to a Subsonic server and fetch tracks.'
-              : 'No tracks match your search.'}
+        <div className="relative">
+          {/* Header */}
+          <div className="sticky top-0 z-10 flex border-b bg-background">
+            <SortHeader label="Title" sortKey="title" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="flex-1" />
+            <SortHeader label="Artist" sortKey="artist" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-48 shrink-0" />
+            <SortHeader label="Album" sortKey="album" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-48 shrink-0" />
+            <SortHeader label="Dur" sortKey="duration" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-12 shrink-0" />
+            <SortHeader label="Year" sortKey="year" currentSort={sort} sortDir={sortDir} onClick={handleSortClick} className="w-14 shrink-0" />
           </div>
-        ) : (
-          <div className="relative">
-            {/* Header */}
-            <div className="sticky top-0 z-10 flex border-b bg-background">
-              <div className="flex-1 px-3 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Title
-              </div>
-              <div className="w-40 shrink-0 px-3 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Artist
-              </div>
-              <div className="w-40 shrink-0 px-3 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Album
-              </div>
+
+          {/* Virtual rows */}
+          {isLoading && tracks.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">Loading…</div>
+          ) : tracks.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              {total === 0
+                ? 'No tracks cached. Connect to a Subsonic server and fetch tracks.'
+                : 'No tracks match your search.'}
             </div>
+          ) : (
             <div
               style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}
             >
               {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const track = filteredTracks[virtualRow.index]
+                const track = tracks[virtualRow.index]
                 if (!track) return null
                 return (
                   <div
-                    key={track.id}
+                    key={track.id as string}
                     className="group flex cursor-pointer items-center border-b border-border/50 transition-colors hover:bg-muted/40"
                     style={{
                       position: 'absolute',
@@ -227,21 +248,36 @@ export function SubsonicView() {
                   >
                     <div className="w-0.5 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                     <div className="flex-1 truncate px-3 text-sm font-medium">
-                      {track.title}
+                      {track.title as string}
                     </div>
-                    <div className="w-40 shrink-0 truncate px-3 text-xs text-muted-foreground">
-                      {track.artist}
+                    <div className="w-48 shrink-0 truncate px-3 text-xs text-muted-foreground">
+                      {track.artist as string}
                     </div>
-                    <div className="w-40 shrink-0 truncate px-3 text-xs text-muted-foreground">
-                      {track.album ?? '—'}
+                    <div className="w-48 shrink-0 truncate px-3 text-xs text-muted-foreground">
+                      {(track.album as string) ?? '—'}
+                    </div>
+                    <div className="w-12 shrink-0 px-3 font-mono text-sm text-muted-foreground">
+                      {track.duration ? formatDuration(track.duration as number) : '—'}
+                    </div>
+                    <div className="w-14 shrink-0 px-3 font-mono text-sm text-muted-foreground">
+                      {(track.year as number) ?? '—'}
                     </div>
                   </div>
                 )
               })}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* Pagination */}
+      <Pagination
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => { setPageSize(size); setPage(1) }}
+      />
     </div>
   )
 }

@@ -9,6 +9,7 @@ import type { ParsedDatabase } from '../proto/schema'
 import type { SongQuery } from './queries'
 import type { Child } from '../subsonic/types'
 import type { SubsonicStats, SubsonicTrackRow } from '../subsonic/db'
+import type { SubsonicQuery } from '../subsonic/queries'
 
 interface WorkerResponse {
   type: 'result' | 'error'
@@ -108,6 +109,10 @@ export class DbClient {
 
   async subsonicGetTracks(): Promise<SubsonicTrackRow[]> {
     return (await this.send('subsonic-tracks', {})) as unknown as SubsonicTrackRow[]
+  }
+
+  async subsonicQueryTracks(query: SubsonicQuery): Promise<{ rows: Record<string, unknown>[]; total: number }> {
+    return (await this.send('subsonic-query', query)) as unknown as { rows: Record<string, unknown>[]; total: number }
   }
 
   async subsonicGetStats(): Promise<SubsonicStats> {
