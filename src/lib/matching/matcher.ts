@@ -69,15 +69,33 @@ function normalizeField(s: string): string[] {
 
 /**
  * Build normalized artist + title variants for a BeatSaver map.
- * Artist and title are normalised separately to enable component-wise matching.
+ *
+ * Artist variants are built from BOTH songAuthor and levelAuthor, because
+ * old BeatSaver maps frequently put the artist name in the mapper field
+ * (and vice versa), or leave songAuthor empty. By including both, we
+ * match regardless of which field the artist name ended up in.
+ *
+ * Title variants are built from songName only.
  */
 export function buildMapKey(song: {
   levelAuthor: string
   songAuthor: string
   songName: string
 }): Omit<MapKey, 'index'> {
+  // Collect artist variants from both fields, deduplicated
+  const fromSongAuthor = normalizeField(song.songAuthor)
+  const fromLevelAuthor = normalizeField(song.levelAuthor)
+  const seen = new Set<string>()
+  const artistVariants: string[] = []
+  for (const v of [...fromSongAuthor, ...fromLevelAuthor]) {
+    if (!seen.has(v)) {
+      seen.add(v)
+      artistVariants.push(v)
+    }
+  }
+
   return {
-    artistVariants: normalizeField(song.songAuthor),
+    artistVariants,
     titleVariants: normalizeField(song.songName),
     variants: [],
   }
