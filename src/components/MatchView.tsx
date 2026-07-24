@@ -1,11 +1,14 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { OneClickButton } from '@/components/OneClickButton'
 import { useMatchData } from '@/hooks/useMatchData'
+import { usePersistentState } from '@/hooks/usePersistentState'
+import { Pagination } from '@/components/table-shared'
 import { ChevronDown, ChevronRight, Loader2, AlertCircle, Search, Zap } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+
+const PAGE_SIZE_DEFAULT = 50
 
 export function MatchView() {
   const { state, threshold, runMatch, updateThreshold } = useMatchData()
@@ -13,13 +16,18 @@ export function MatchView() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [minScore, setMinScore] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = usePersistentState<number>('match-pageSize', PAGE_SIZE_DEFAULT)
 
   // Debounce search
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value)
     if (searchTimer.current) clearTimeout(searchTimer.current)
-    searchTimer.current = setTimeout(() => setDebouncedSearch(value), 300)
+    searchTimer.current = setTimeout(() => {
+      setDebouncedSearch(value)
+      setPage(1)
+    }, 300)
   }, [])
 
   const filteredResults = state.results.filter((r) => {
@@ -38,6 +46,10 @@ export function MatchView() {
     return true
   })
 
+  // Pagination — slice the filtered results
+  const total = filteredResults.length
+  const pageResults = filteredResults.slice((page - 1) * pageSize, page * pageSize)
+
   const toggleRow = useCallback((index: number) => {
     setExpandedRows((prev) => {
       const next = new Set(prev)
@@ -46,22 +58,6 @@ export function MatchView() {
       return next
     })
   }, [])
-
-  // Virtual scrolling — dynamically measure row height for expanded rows
-  const tableContainerRef = useRef<HTMLDivElement>(null)
-  const rowVirtualizer = useVirtualizer({
-    count: filteredResults.length,
-    getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 44,
-    overscan: 5,
-    // Re-measure when expansion state changes
-    getItemKey: (index) => index,
-  })
-
-  // Force re-measurement when rows expand/collapse
-  useEffect(() => {
-    rowVirtualizer.measure()
-  }, [expandedRows, rowVirtualizer])
 
   const coveragePct =
     state.totalTracks > 0
@@ -152,7 +148,7 @@ export function MatchView() {
       </div>
 
       {/* Results */}
-      <div className="flex-1 overflow-auto" ref={tableContainerRef}>
+      <div className="flex-1 overflow-auto">
         {state.status === 'loading' ? (
           <div className="py-12 text-center text-sm text-muted-foreground">
             <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin" />
@@ -195,38 +191,32 @@ export function MatchView() {
               Run Match
             </Button>
           </div>
-        ) : filteredResults.length === 0 ? (
+        ) : pageResults.length === 0 ? (
           <div className="py-12 text-center text-sm text-muted-foreground">
             {state.results.length === 0
               ? 'No matches found. Try lowering the threshold or fetch tracks first.'
               : 'No results match your filters.'}
           </div>
         ) : (
-          <div
-            style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}
-          >
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const result = filteredResults[virtualRow.index]
-              if (!result) return null
-              const isExpanded = expandedRows.has(virtualRow.index)
+          <div>
+            {/* Header */}
+            <div className="sticky top-0 z-10 flex border-b bg-background">
+              <div className="w-8 shrink-0 px-2 py-2" />
+              <div className="flex-1 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Title</div>
+              <div className="w-40 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Artist</div>
+              <div className="w-16 shrink-0 px-2 py-2 text-right font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Score</div>
+              <div className="w-16 shrink-0 px-2 py-2 text-right font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Maps</div>
+            </div>
+
+            {pageResults.map((result, pageIdx) => {
+              const isExpanded = expandedRows.has(pageIdx)
               const bestScore = result.matches[0]?.score ?? 0
 
               return (
-                <div
-                  key={virtualRow.index}
-                  ref={rowVirtualizer.measureElement}
-                  data-index={virtualRow.index}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
+                <div key={pageIdx}>
                   {/* Track row */}
                   <div
-                    onClick={() => toggleRow(virtualRow.index)}
+                    onClick={() => toggleRow(pageIdx)}
                     className="group flex cursor-pointer items-center border-b border-border/50 transition-colors hover:bg-muted/40"
                   >
                     <div className="w-0.5 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -296,6 +286,17 @@ export function MatchView() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {state.status === 'ready' && total > 0 && (
+        <Pagination
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1) }}
+        />
+      )}
     </div>
   )
 }
