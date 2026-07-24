@@ -148,9 +148,28 @@ export function MatchView() {
       <div className="flex-1 overflow-auto" ref={tableContainerRef}>
         {state.status === 'loading' ? (
           <div className="py-12 text-center text-sm text-muted-foreground">
-            <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
-            Matching {state.totalTracks.toLocaleString()} tracks against{' '}
-            {state.totalMaps.toLocaleString()} maps…
+            <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin" />
+            {state.progress ? (
+              <>
+                <p className="mb-2">
+                  {state.progress.phase === 'building-keys'
+                    ? `Building keys: ${state.progress.current.toLocaleString()} / ${state.progress.total.toLocaleString()}`
+                    : `Matching: ${state.progress.current.toLocaleString()} / ${state.progress.total.toLocaleString()}`}
+                </p>
+                <div className="mx-auto h-1.5 w-64 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="saber-gradient h-full transition-all duration-300"
+                    style={{
+                      width: `${state.progress.total > 0
+                        ? (state.progress.current / state.progress.total) * 100
+                        : 0}%`,
+                    }}
+                  />
+                </div>
+              </>
+            ) : (
+              <p>Starting…</p>
+            )}
           </div>
         ) : state.status === 'idle' ? (
           <div className="py-12 text-center text-sm text-muted-foreground">

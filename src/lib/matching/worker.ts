@@ -88,7 +88,14 @@ self.onmessage = (event: MessageEvent<MatchWorkerRequest>) => {
       total: tracks.length,
     } satisfies MatchWorkerProgress)
 
-    const results = matchAllTracks(trackKeys, mapKeys, threshold)
+    const results = matchAllTracks(trackKeys, mapKeys, threshold, (current, total) => {
+      self.postMessage({
+        type: 'progress',
+        phase: 'matching',
+        current,
+        total,
+      } satisfies MatchWorkerProgress)
+    })
 
     self.postMessage({
       type: 'progress',

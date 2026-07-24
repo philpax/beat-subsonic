@@ -198,11 +198,17 @@ export function matchTrackToMaps(
  * Returns only tracks with ≥1 match.
  *
  * This is the main entry point for the matching engine.
+ *
+ * @param onProgress Optional callback called every `progressInterval` tracks
+ *                   with (current, total). Use this to report progress from a
+ *                   worker without blocking the main thread.
  */
 export function matchAllTracks(
   tracks: TrackKey[],
   maps: MapKey[],
-  threshold: number
+  threshold: number,
+  onProgress?: (current: number, total: number) => void,
+  progressInterval: number = 500
 ): MatchResult[] {
   const index = buildMatchIndex(maps)
 
@@ -214,7 +220,13 @@ export function matchAllTracks(
 
   const results: MatchResult[] = []
 
-  for (const track of tracks) {
+  for (let i = 0; i < tracks.length; i++) {
+    const track = tracks[i]
+
+    if (onProgress && i % progressInterval === 0) {
+      onProgress(i, tracks.length)
+    }
+
     const matched = new Set<number>()
 
     for (const trackVariant of track.variants) {
