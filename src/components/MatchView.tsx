@@ -74,7 +74,9 @@ export function MatchView({ tagList }: MatchViewProps) {
       return key
     })
   }, [])
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
+  // Keyed by the primary track instance's id, so expansion sticks to the
+  // TRACK rather than a row position that shifts with paging/filtering
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [minScore, setMinScore] = useState(0)
@@ -109,11 +111,11 @@ export function MatchView({ tagList }: MatchViewProps) {
   const total = filteredResults.length
   const pageResults = filteredResults.slice((page - 1) * pageSize, page * pageSize)
 
-  const toggleRow = useCallback((index: number) => {
+  const toggleRow = useCallback((trackId: string) => {
     setExpandedRows((prev) => {
       const next = new Set(prev)
-      if (next.has(index)) next.delete(index)
-      else next.add(index)
+      if (next.has(trackId)) next.delete(trackId)
+      else next.add(trackId)
       return next
     })
   }, [])
@@ -280,15 +282,16 @@ export function MatchView({ tagList }: MatchViewProps) {
               </div>
             </div>
 
-            {pageResults.map((result, pageIdx) => {
-              const isExpanded = expandedRows.has(pageIdx)
+            {pageResults.map((result) => {
+              const trackId = result.track.id
+              const isExpanded = expandedRows.has(trackId)
               const bestScore = result.matches[0]?.score ?? 0
 
               return (
-                <div key={pageIdx}>
+                <div key={trackId}>
                   {/* Track row */}
                   <div
-                    onClick={() => toggleRow(pageIdx)}
+                    onClick={() => toggleRow(trackId)}
                     className="group flex cursor-pointer items-center border-b border-border/50 transition-colors hover:bg-muted/40"
                   >
                     <div className="w-0.5 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
