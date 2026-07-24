@@ -267,6 +267,13 @@ function findCandidates(
     }
   }
 
+  // If no artist match at all (exact or trigram), skip the expensive title
+  // trigram fallback — the track artist has no maps on BeatSaver, so running
+  // title trigrams would just scan ~1000 candidates for nothing.
+  if (candidates.size === 0 && candidateArtistVariants.size === 0) {
+    return candidates
+  }
+
   // Tertiary: title trigram search — last resort for tracks with no
   // artist match at all (e.g. soundtrack compilations where the track
   // artist is "Various Artists" or empty)
@@ -354,7 +361,7 @@ export function matchTrackToMaps(
 ): number[] {
   const matched = new Set<number>()
 
-  // 1. Exact title match (fast path — handles exact name matches regardless of artist)
+  // 1. Exact title match (fast path)
   for (const titleVariant of track.titleVariants) {
     const exact = index.titleVariantIndex.get(titleVariant)
     if (exact) {
@@ -367,7 +374,7 @@ export function matchTrackToMaps(
     }
   }
 
-  // 2. Find candidates via artist index (primary) or trigram index (fallback)
+  // 2. Find candidates via artist index (primary) or trigram fallback
   const candidates = findCandidates(track, index)
   for (const mapIdx of candidates) {
     if (matched.has(mapIdx)) continue
