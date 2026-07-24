@@ -57,7 +57,7 @@ function App() {
       <TabLayout activeTab={activeTab} onTabChange={setActiveTab}>
         {activeTab === 'beatsaver' && <SongTable tagList={tagList} />}
         {activeTab === 'subsonic' && <SubsonicView />}
-        {activeTab === 'match' && <MatchView />}
+        {activeTab === 'match' && <MatchView tagList={tagList} />}
       </TabLayout>
     </AppShell>
   )

@@ -18,7 +18,10 @@ export interface MatchedMap {
 }
 
 export interface TrackWithMatches {
+  /** Primary instance of the track (first one encountered). */
   track: SubsonicTrackRow
+  /** All library instances of this (artist, title) — e.g. across albums. */
+  instances: SubsonicTrackRow[]
   matches: MatchedMap[]
 }
 
@@ -29,6 +32,9 @@ export interface MatchState {
   error: string | null
   results: TrackWithMatches[]
   totalTracks: number
+  /** Distinct (artist, title) groups across the whole library. */
+  totalUniqueTracks: number
+  /** Matched (artist, title) groups. */
   matchedTracks: number
   totalMaps: number
   progress: MatchProgress | null
@@ -42,6 +48,7 @@ export function useMatchData() {
     error: null,
     results: [],
     totalTracks: 0,
+    totalUniqueTracks: 0,
     matchedTracks: 0,
     totalMaps: 0,
     progress: null,
@@ -143,23 +150,38 @@ export function useMatchData() {
         }
       )
 
-      // Build result objects with scores
-      const results: TrackWithMatches[] = matchResults.map((mr) => {
+      // Group matched tracks by case-insensitive (artist, title) — the
+      // same track often appears on multiple albums (single, album,
+      // compilation) and would otherwise produce duplicate rows
+      const groupKey = (t: SubsonicTrackRow) =>
+        JSON.stringify([t.artist.toLowerCase(), t.title.toLowerCase()])
+
+      const groups = new Map<string, TrackWithMatches>()
+      for (const mr of matchResults) {
         const track = subsonicTracks[mr.trackIndex]
-        const matches: MatchedMap[] = mr.mapIndices.map((mapIdx) => {
+        let group = groups.get(groupKey(track))
+        if (!group) {
+          group = { track, instances: [], matches: [] }
+          groups.set(groupKey(track), group)
+        }
+        group.instances.push(track)
+
+        for (const mapIdx of mr.mapIndices) {
           const song = songs[mapIdx]
-          const score = computeMatchScore(
-            trackKeys[mr.trackIndex],
-            mapKeys[mapIdx]
-          )
-          return { song, score }
-        })
+          const score = computeMatchScore(trackKeys[mr.trackIndex], mapKeys[mapIdx])
+          const existing = group.matches.find((m) => m.song.map_id === song.map_id)
+          if (existing) {
+            if (score > existing.score) existing.score = score
+          } else {
+            group.matches.push({ song, score })
+          }
+        }
+      }
 
-        // Sort matches by score descending
-        matches.sort((a, b) => b.score - a.score)
-
-        return { track, matches }
-      })
+      const results = Array.from(groups.values())
+      for (const group of results) {
+        group.matches.sort((a, b) => b.score - a.score)
+      }
 
       // Sort results by artist, then title
       results.sort((a, b) => {
@@ -168,11 +190,16 @@ export function useMatchData() {
         return a.track.title.localeCompare(b.track.title)
       })
 
+      // Coverage denominator: unique (artist, title) groups in the library
+      const uniqueKeys = new Set<string>()
+      for (const track of subsonicTracks) uniqueKeys.add(groupKey(track))
+
       setState((s) => ({
         ...s,
         status: 'ready',
         results,
         totalTracks: subsonicTracks.length,
+        totalUniqueTracks: uniqueKeys.size,
         matchedTracks: results.length,
         totalMaps: songs.length,
         progress: null,

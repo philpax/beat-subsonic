@@ -1,17 +1,25 @@
 import { useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { OneClickButton } from '@/components/OneClickButton'
+import { SongDetailDialog } from '@/components/SongDetailDialog'
 import { useMatchData } from '@/hooks/useMatchData'
 import { usePersistentState } from '@/hooks/usePersistentState'
-import { Pagination } from '@/components/table-shared'
+import { Pagination, formatDuration, formatIsoDate } from '@/components/table-shared'
+import { RankedStates, isRankedSet } from '@/lib/proto/enums'
+import type { SongRow } from '@/lib/types'
 import { ChevronDown, ChevronRight, Loader2, AlertCircle, Search, Zap } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
 const PAGE_SIZE_DEFAULT = 50
 
-export function MatchView() {
+interface MatchViewProps {
+  tagList: string[]
+}
+
+export function MatchView({ tagList }: MatchViewProps) {
   const { state, threshold, runMatch, updateThreshold } = useMatchData()
+  const [selectedSong, setSelectedSong] = useState<SongRow | null>(null)
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -60,8 +68,8 @@ export function MatchView() {
   }, [])
 
   const coveragePct =
-    state.totalTracks > 0
-      ? ((state.matchedTracks / state.totalTracks) * 100).toFixed(1)
+    state.totalUniqueTracks > 0
+      ? ((state.matchedTracks / state.totalUniqueTracks) * 100).toFixed(1)
       : '0.0'
 
   return (
@@ -125,7 +133,11 @@ export function MatchView() {
       <div className="flex items-center gap-4 border-b px-3 py-1.5 text-xs text-muted-foreground">
         <span>{state.matchedTracks.toLocaleString()} matched tracks</span>
         <span>·</span>
-        <span>{state.totalTracks.toLocaleString()} total tracks</span>
+        <span>
+          {state.totalUniqueTracks > 0
+            ? `${state.totalUniqueTracks.toLocaleString()} unique / ${state.totalTracks.toLocaleString()} total tracks`
+            : `${state.totalTracks.toLocaleString()} total tracks`}
+        </span>
         <span>·</span>
         <span>{coveragePct}% coverage</span>
         <span>·</span>
@@ -229,6 +241,16 @@ export function MatchView() {
                     </div>
                     <div className="flex-1 truncate px-2 text-sm font-medium">
                       {result.track.title}
+                      {result.instances.length > 1 && (
+                        <span
+                          className="ml-2 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+                          title={`On ${result.instances.length} albums:\n${[
+                            ...new Set(result.instances.map((t) => t.album ?? '—')),
+                          ].join('\n')}`}
+                        >
+                          ×{result.instances.length}
+                        </span>
+                      )}
                     </div>
                     <div className="w-40 shrink-0 truncate px-2 text-xs text-muted-foreground">
                       {result.track.artist}
@@ -252,28 +274,63 @@ export function MatchView() {
                     </div>
                   </div>
 
-                  {/* Expanded matches */}
+                  {/* Expanded matches — same table form as the BeatSaver view */}
                   {isExpanded && (
                     <div className="bg-muted/20 border-b border-border/50">
-                      {result.matches.map((match, mIdx) => (
+                      {/* Column header */}
+                      <div className="flex items-center border-b border-border/30 pl-8">
+                        <div className="w-10 shrink-0" />
+                        <div className="flex-1 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Song</div>
+                        <div className="w-32 shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Author</div>
+                        <div className="w-32 shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Mapper</div>
+                        <div className="w-12 shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">BPM</div>
+                        <div className="w-12 shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Dur</div>
+                        <div className="w-14 shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Rating</div>
+                        <div className="w-14 shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Ranked</div>
+                        <div className="w-24 shrink-0 px-2 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Uploaded</div>
+                        <div className="w-14 shrink-0 px-2 py-1 text-right font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Score</div>
+                        <div className="w-24 shrink-0 px-2 py-1" />
+                      </div>
+                      {result.matches.map((match) => (
                         <div
-                          key={mIdx}
-                          className="flex items-center border-b border-border/30 px-2 py-1.5 last:border-0"
-                          style={{ paddingLeft: '3rem' }}
+                          key={match.song.map_id}
+                          onClick={() => setSelectedSong(match.song)}
+                          className="group/match flex cursor-pointer items-center border-b border-border/30 pl-8 transition-colors last:border-0 hover:bg-muted/40"
                         >
-                          <div className="flex-1 truncate text-xs">
-                            <span className="font-medium">{match.song.song_name}</span>
-                            <span className="ml-2 text-muted-foreground">
-                              {match.song.song_author}
-                            </span>
-                            <span className="ml-2 text-muted-foreground">
-                              · {match.song.level_author}
-                            </span>
+                          <div className="w-10 shrink-0 px-2 py-1">
+                            <img
+                              src={`https://cdn.beatsaver.com/${match.song.hash}.jpg`}
+                              alt=""
+                              loading="lazy"
+                              className="h-8 w-8 rounded object-cover"
+                              onError={(e) => {
+                                ;(e.target as HTMLImageElement).style.opacity = '0'
+                              }}
+                            />
                           </div>
-                          <div className="w-16 shrink-0 text-right font-mono text-[10px] text-muted-foreground">
+                          <div className="flex-1 truncate px-2 text-xs font-medium">{match.song.song_name}</div>
+                          <div className="w-32 shrink-0 truncate px-2 text-xs text-muted-foreground">{match.song.song_author}</div>
+                          <div className="w-32 shrink-0 truncate px-2 text-xs text-muted-foreground">{match.song.level_author}</div>
+                          <div className="w-12 shrink-0 px-2 font-mono text-xs">{match.song.bpm.toFixed(0)}</div>
+                          <div className="w-12 shrink-0 px-2 font-mono text-xs text-muted-foreground">{formatDuration(match.song.duration)}</div>
+                          <div className="w-14 shrink-0 px-2 font-mono text-xs">{(match.song.rating * 100).toFixed(0)}%</div>
+                          <div className="w-14 shrink-0 px-2">
+                            <div className="flex gap-1">
+                              {isRankedSet(match.song.ranked_states, RankedStates.ScoresaberRanked) && (
+                                <span className="text-[10px] font-bold text-primary">SS</span>
+                              )}
+                              {isRankedSet(match.song.ranked_states, RankedStates.BeatleaderRanked) && (
+                                <span className="text-[10px] font-bold text-accent">BL</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="w-24 shrink-0 px-2 font-mono text-xs text-muted-foreground">
+                            {formatIsoDate(match.song.upload_time)}
+                          </div>
+                          <div className="w-14 shrink-0 px-2 text-right font-mono text-[10px] text-muted-foreground">
                             {(match.score * 100).toFixed(0)}%
                           </div>
-                          <div className="w-24 shrink-0 px-2">
+                          <div className="w-24 shrink-0 px-2" onClick={(e) => e.stopPropagation()}>
                             <OneClickButton songKey={match.song.key} size="sm" />
                           </div>
                         </div>
@@ -297,6 +354,13 @@ export function MatchView() {
           onPageSizeChange={(size) => { setPageSize(size); setPage(1) }}
         />
       )}
+
+      {/* Song detail dialog */}
+      <SongDetailDialog
+        song={selectedSong}
+        tagList={tagList}
+        onClose={() => setSelectedSong(null)}
+      />
     </div>
   )
 }
