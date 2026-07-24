@@ -345,20 +345,20 @@ export function MatchView({ tagList }: MatchViewProps) {
                       <div className="flex items-center border-b border-border/30 pl-8">
                         <div className="w-10 shrink-0" />
                         <SortHeader
-                          label="Song"
+                          label="Artist"
+                          sortKey="song_author"
+                          currentSort={matchSort}
+                          sortDir={matchSortDir}
+                          onClick={handleMatchSortClick}
+                          className="w-40"
+                        />
+                        <SortHeader
+                          label="Title"
                           sortKey="song_name"
                           currentSort={matchSort}
                           sortDir={matchSortDir}
                           onClick={handleMatchSortClick}
                           className="flex-1"
-                        />
-                        <SortHeader
-                          label="Author"
-                          sortKey="song_author"
-                          currentSort={matchSort}
-                          sortDir={matchSortDir}
-                          onClick={handleMatchSortClick}
-                          className="w-32"
                         />
                         <SortHeader
                           label="Mapper"
@@ -435,11 +435,11 @@ export function MatchView({ tagList }: MatchViewProps) {
                               }}
                             />
                           </div>
+                          <div className="w-40 shrink-0 truncate px-2 text-xs text-muted-foreground">
+                            {match.song.song_author}
+                          </div>
                           <div className="flex-1 truncate px-2 text-xs font-medium">
                             {match.song.song_name}
-                          </div>
-                          <div className="w-32 shrink-0 truncate px-2 text-xs text-muted-foreground">
-                            {match.song.song_author}
                           </div>
                           <div className="w-32 shrink-0 truncate px-2 text-xs text-muted-foreground">
                             {match.song.level_author}
