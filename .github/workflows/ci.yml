@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
 
+# Serialize Pages deployments — a new deployment 400s if the previous one
+# is still in progress. Don't cancel in-flight runs; queue behind them.
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: false
+
 jobs:
   check:
     runs-on: ubuntu-latest
