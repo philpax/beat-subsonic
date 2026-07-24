@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { Button } from '@/components/ui/button'
 import { OneClickButton } from '@/components/OneClickButton'
@@ -47,14 +47,21 @@ export function MatchView() {
     })
   }, [])
 
-  // Virtual scrolling — each row has variable height depending on expansion
+  // Virtual scrolling — dynamically measure row height for expanded rows
   const tableContainerRef = useRef<HTMLDivElement>(null)
   const rowVirtualizer = useVirtualizer({
     count: filteredResults.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: (index) => (expandedRows.has(index) ? 200 : 44),
+    estimateSize: () => 44,
     overscan: 5,
+    // Re-measure when expansion state changes
+    getItemKey: (index) => index,
   })
+
+  // Force re-measurement when rows expand/collapse
+  useEffect(() => {
+    rowVirtualizer.measure()
+  }, [expandedRows, rowVirtualizer])
 
   const coveragePct =
     state.totalTracks > 0
@@ -207,12 +214,13 @@ export function MatchView() {
               return (
                 <div
                   key={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
+                  data-index={virtualRow.index}
                   style={{
                     position: 'absolute',
                     top: 0,
                     left: 0,
                     width: '100%',
-                    height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
