@@ -42,10 +42,12 @@ export interface TrackKey {
 
 /** Pre-built index for fast map lookups. */
 export interface MatchIndex {
-  /** Maps each title trigram → set of map indices. */
-  titleTrigramIndex: Map<string, Set<number>>
+  /** Maps each artist variant → set of map indices (primary lookup). */
+  artistIndex: Map<string, Set<number>>
   /** Maps each exact title variant → array of map indices. */
   titleVariantIndex: Map<string, number[]>
+  /** Maps each title trigram → set of map indices (fallback for artist miss). */
+  titleTrigramIndex: Map<string, Set<number>>
 }
 
 /** Result of matching a single track to maps. */
@@ -113,13 +115,30 @@ export function extractTrigrams(s: string): string[] {
 
 /**
  * Build a match index from map keys.
- * Indexes title variants for candidate retrieval via trigrams.
+ *
+ * Primary index: artist variant → map indices. This lets us find all maps
+ * by a given artist in O(1), which is the most discriminating filter since
+ * artist names are far more unique than title trigrams.
+ *
+ * Secondary indexes: exact title variant lookup and title trigram index
+ * (used as fallback when artist matching fails or for contains checks).
  */
 export function buildMatchIndex(maps: MapKey[]): MatchIndex {
+  const artistIndex = new Map<string, Set<number>>()
   const titleTrigramIndex = new Map<string, Set<number>>()
   const titleVariantIndex = new Map<string, number[]>()
 
   for (const map of maps) {
+    // Artist index — primary lookup
+    for (const artistVariant of map.artistVariants) {
+      let set = artistIndex.get(artistVariant)
+      if (!set) {
+        set = new Set<number>()
+        artistIndex.set(artistVariant, set)
+      }
+      set.add(map.index)
+    }
+
     for (const titleVariant of map.titleVariants) {
       // Exact title variant index
       const existing = titleVariantIndex.get(titleVariant)
@@ -129,7 +148,7 @@ export function buildMatchIndex(maps: MapKey[]): MatchIndex {
         titleVariantIndex.set(titleVariant, [map.index])
       }
 
-      // Trigram index
+      // Trigram index (fallback)
       const trigrams = extractTrigrams(titleVariant)
       for (const trigram of trigrams) {
         let set = titleTrigramIndex.get(trigram)
@@ -142,45 +161,62 @@ export function buildMatchIndex(maps: MapKey[]): MatchIndex {
     }
   }
 
-  return { titleTrigramIndex, titleVariantIndex }
+  return { artistIndex, titleTrigramIndex, titleVariantIndex }
 }
 
-/** Maximum candidates to consider per track variant (performance guard). */
+/** Maximum candidates to consider per track (performance guard for trigram fallback). */
 const MAX_CANDIDATES = 2000
 
 /**
- * Find candidate map indices for a track title variant using the trigram index.
- * Only returns maps that share a meaningful number of trigrams with the track
- * variant. The threshold scales with variant length — longer variants require
- * more shared trigrams, which eliminates false candidates from common trigrams.
+ * Find candidate map indices using the artist index (primary) and trigram
+ * index (fallback). The artist index is O(1) per artist variant and returns
+ * far fewer candidates than trigrams, making it the primary path.
  */
 function findCandidates(
-  titleVariant: string,
+  track: TrackKey,
   index: MatchIndex
 ): Set<number> {
-  const trigrams = extractTrigrams(titleVariant)
-  const uniqueTrigrams = new Set(trigrams)
-  // Require at least 25% of the variant's trigrams to match, minimum 2
-  const minShared = Math.max(2, Math.ceil(uniqueTrigrams.size * 0.25))
+  const candidates = new Set<number>()
 
-  const candidateCounts = new Map<number, number>()
-  for (const trigram of uniqueTrigrams) {
-    const maps = index.titleTrigramIndex.get(trigram)
+  // Primary: look up maps by exact artist variant match
+  for (const artistVariant of track.artistVariants) {
+    const maps = index.artistIndex.get(artistVariant)
     if (maps) {
       for (const mapIdx of maps) {
-        candidateCounts.set(mapIdx, (candidateCounts.get(mapIdx) ?? 0) + 1)
+        candidates.add(mapIdx)
       }
     }
   }
 
-  const result = new Set<number>()
-  for (const [mapIdx, count] of candidateCounts) {
-    if (count >= minShared) {
-      result.add(mapIdx)
-      if (result.size >= MAX_CANDIDATES) break
+  // If artist index found candidates, use only those (they're already
+  // pre-filtered by artist). Only fall back to trigrams if no artist
+  // matches at all (e.g. artist name is slightly different).
+  if (candidates.size === 0) {
+    for (const titleVariant of track.titleVariants) {
+      const trigrams = extractTrigrams(titleVariant)
+      const uniqueTrigrams = new Set(trigrams)
+      const minShared = Math.max(2, Math.ceil(uniqueTrigrams.size * 0.25))
+
+      const candidateCounts = new Map<number, number>()
+      for (const trigram of uniqueTrigrams) {
+        const maps = index.titleTrigramIndex.get(trigram)
+        if (maps) {
+          for (const mapIdx of maps) {
+            candidateCounts.set(mapIdx, (candidateCounts.get(mapIdx) ?? 0) + 1)
+          }
+        }
+      }
+
+      for (const [mapIdx, count] of candidateCounts) {
+        if (count >= minShared) {
+          candidates.add(mapIdx)
+          if (candidates.size >= MAX_CANDIDATES) return candidates
+        }
+      }
     }
   }
-  return result
+
+  return candidates
 }
 
 // ---- Matching (pure) ----
@@ -227,8 +263,9 @@ function titleMatches(
  * Match a single track against the match index.
  * A match requires BOTH title AND artist to match.
  *
- * Checks artist FIRST because it's cheaper and more discriminating —
- * if the artist doesn't match, we skip the expensive title fuzzy match.
+ * Strategy: look up maps by artist (O(1) exact/contains), then check title
+ * only within that small candidate set. Falls back to trigram title search
+ * only if no artist match is found (handles artist name variations).
  */
 export function matchTrackToMaps(
   track: TrackKey,
@@ -238,35 +275,33 @@ export function matchTrackToMaps(
 ): number[] {
   const matched = new Set<number>()
 
+  // 1. Exact title match (fast path — handles exact name matches regardless of artist)
   for (const titleVariant of track.titleVariants) {
-    // 1. Exact title match
     const exact = index.titleVariantIndex.get(titleVariant)
     if (exact) {
       for (const mapIdx of exact) {
         if (matched.has(mapIdx)) continue
-        // Verify artist also matches
         if (artistMatches(track.artistVariants, maps[mapIdx].artistVariants, threshold)) {
           matched.add(mapIdx)
         }
       }
     }
+  }
 
-    // 2. Find candidates via trigram index, then check artist first (cheap),
-    //    then title (expensive fuzzy)
-    const candidates = findCandidates(titleVariant, index)
-    for (const mapIdx of candidates) {
-      if (matched.has(mapIdx)) continue
+  // 2. Find candidates via artist index (primary) or trigram index (fallback)
+  const candidates = findCandidates(track, index)
+  for (const mapIdx of candidates) {
+    if (matched.has(mapIdx)) continue
 
-      const map = maps[mapIdx]
-      if (!map) continue
+    const map = maps[mapIdx]
+    if (!map) continue
 
-      // Artist check first — cheap and eliminates most false candidates
-      if (!artistMatches(track.artistVariants, map.artistVariants, threshold)) continue
+    // Artist check first — cheap and eliminates most false candidates
+    if (!artistMatches(track.artistVariants, map.artistVariants, threshold)) continue
 
-      // Title check — expensive fuzzy match, only on artist-matched candidates
-      if (titleMatches(track.titleVariants, map.titleVariants, threshold)) {
-        matched.add(mapIdx)
-      }
+    // Title check — expensive fuzzy match, only on artist-matched candidates
+    if (titleMatches(track.titleVariants, map.titleVariants, threshold)) {
+      matched.add(mapIdx)
     }
   }
 
