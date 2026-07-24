@@ -226,6 +226,9 @@ function titleMatches(
 /**
  * Match a single track against the match index.
  * A match requires BOTH title AND artist to match.
+ *
+ * Checks artist FIRST because it's cheaper and more discriminating —
+ * if the artist doesn't match, we skip the expensive title fuzzy match.
  */
 export function matchTrackToMaps(
   track: TrackKey,
@@ -248,7 +251,8 @@ export function matchTrackToMaps(
       }
     }
 
-    // 2. Find candidates via trigram index, then check title + artist
+    // 2. Find candidates via trigram index, then check artist first (cheap),
+    //    then title (expensive fuzzy)
     const candidates = findCandidates(titleVariant, index)
     for (const mapIdx of candidates) {
       if (matched.has(mapIdx)) continue
@@ -256,11 +260,11 @@ export function matchTrackToMaps(
       const map = maps[mapIdx]
       if (!map) continue
 
-      // Both title AND artist must match
-      if (
-        titleMatches(track.titleVariants, map.titleVariants, threshold) &&
-        artistMatches(track.artistVariants, map.artistVariants, threshold)
-      ) {
+      // Artist check first — cheap and eliminates most false candidates
+      if (!artistMatches(track.artistVariants, map.artistVariants, threshold)) continue
+
+      // Title check — expensive fuzzy match, only on artist-matched candidates
+      if (titleMatches(track.titleVariants, map.titleVariants, threshold)) {
         matched.add(mapIdx)
       }
     }

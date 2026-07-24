@@ -34,7 +34,7 @@ export interface MatchState {
   progress: MatchProgress | null
 }
 
-const DEFAULT_THRESHOLD = 0.8
+const DEFAULT_THRESHOLD = 0.85
 
 export function useMatchData() {
   const [state, setState] = useState<MatchState>({

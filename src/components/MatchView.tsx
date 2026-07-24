@@ -97,7 +97,7 @@ export function MatchView() {
           </label>
           <input
             type="range"
-            min="50"
+            min="60"
             max="100"
             value={Math.round(threshold * 100)}
             onChange={(e) => updateThreshold(Number(e.target.value) / 100)}
