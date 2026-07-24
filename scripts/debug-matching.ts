@@ -3,9 +3,6 @@
  *
  * Usage:
  *   npx tsx scripts/debug-matching.ts tmp/beatsaver-songs.json tmp/subsonic-tracks.json
- *
- * Finds specific tracks from the user's report and shows the full
- * normalisation + matching pipeline.
  */
 
 import { readFileSync } from 'node:fs'
@@ -13,11 +10,11 @@ import {
   buildMapKey,
   buildTrackKey,
   computeMatchScore,
+  type MapKey,
+  type TrackKey,
 } from '../src/lib/matching/matcher'
 import { fuzzyMatch } from '../src/lib/matching/fuzzy'
 import {
-  normalizeVariants,
-  normalizeForMatching,
   stripAlbumParentheses,
   stripSuperfluousWords,
 } from '../src/lib/matching/normalize'
@@ -35,14 +32,12 @@ interface SubsonicTrack {
   title: string
   artist: string
   album: string | null
-  normalized_key: string
 }
 
 function main() {
   const songs: BeatSaverSong[] = JSON.parse(readFileSync(process.argv[2] ?? 'tmp/beatsaver-songs.json', 'utf-8'))
   const tracks: SubsonicTrack[] = JSON.parse(readFileSync(process.argv[3] ?? 'tmp/subsonic-tracks.json', 'utf-8'))
 
-  // Find the tracks mentioned in the user's report
   const searchTerms = [
     'Let Me Remain',
     'Life Force',
@@ -59,28 +54,25 @@ function main() {
     }
 
     console.log(`\n=== ${track.title} — ${track.artist} ===`)
-    console.log(`  Raw: artist="${track.artist}" title="${track.title}"`)
 
-    const strippedTitle = stripSuperfluousWords(stripAlbumParentheses(track.title))
-    const strippedArtist = stripSuperfluousWords(stripAlbumParentheses(track.artist))
-    console.log(`  Stripped: artist="${strippedArtist}" title="${strippedTitle}"`)
-
-    const trackVariants = buildTrackKey({ artist: track.artist, title: track.title })
-    console.log(`  Track variants: ${JSON.stringify(trackVariants)}`)
+    const trackKey = buildTrackKey({ artist: track.artist, title: track.title })
+    console.log(`  Track artist variants: ${JSON.stringify(trackKey.artistVariants)}`)
+    console.log(`  Track title variants: ${JSON.stringify(trackKey.titleVariants)}`)
 
     // Find all maps that match this track at threshold 0.8
-    const matchingMaps: { song: BeatSaverSong; score: number; mapVariants: string[] }[] = []
+    const matchingMaps: { song: BeatSaverSong; score: number; mapKey: MapKey }[] = []
     for (const song of songs) {
-      const mapVariants = buildMapKey({
+      const mapKey = buildMapKey({
+        index: 0,
         levelAuthor: song.level_author,
         songAuthor: song.song_author,
         songName: song.song_name,
-      })
-      if (mapVariants.length === 0) continue
+      } as any) as MapKey
+      if (mapKey.artistVariants.length === 0 && mapKey.titleVariants.length === 0) continue
 
-      const score = computeMatchScore(trackVariants, mapVariants)
+      const score = computeMatchScore(trackKey as TrackKey, mapKey)
       if (score >= 0.8) {
-        matchingMaps.push({ song, score, mapVariants })
+        matchingMaps.push({ song, score, mapKey })
       }
     }
     matchingMaps.sort((a, b) => b.score - a.score)
@@ -88,15 +80,23 @@ function main() {
     console.log(`  Found ${matchingMaps.length} matching maps (threshold 0.8):`)
     for (const m of matchingMaps.slice(0, 5)) {
       console.log(`    [${(m.score * 100).toFixed(0)}%] "${m.song.song_name}" by ${m.song.song_author} (mapper: ${m.song.level_author})`)
-      console.log(`      map variants: ${JSON.stringify(m.mapVariants)}`)
+      console.log(`      map artist variants: ${JSON.stringify(m.mapKey.artistVariants)}`)
+      console.log(`      map title variants: ${JSON.stringify(m.mapKey.titleVariants)}`)
 
       // Show which variant pairs matched and why
-      for (const tv of trackVariants) {
-        for (const mv of m.mapVariants) {
-          const fs = fuzzyMatch(tv, mv)
-          if (fs >= 0.8) {
-            const contains = tv.includes(mv) || mv.includes(tv)
-            console.log(`      fuzzyMatch("${tv}", "${mv}") = ${fs.toFixed(3)} ${contains ? '(contains!)' : ''}`)
+      for (const ta of trackKey.artistVariants) {
+        for (const ma of m.mapKey.artistVariants) {
+          const fs = fuzzyMatch(ta, ma)
+          if (fs >= 0.5) {
+            console.log(`      artist fuzzyMatch("${ta}", "${ma}") = ${fs.toFixed(3)}`)
+          }
+        }
+      }
+      for (const tt of trackKey.titleVariants) {
+        for (const mt of m.mapKey.titleVariants) {
+          const fs = fuzzyMatch(tt, mt)
+          if (fs >= 0.5) {
+            console.log(`      title fuzzyMatch("${tt}", "${mt}") = ${fs.toFixed(3)}`)
           }
         }
       }

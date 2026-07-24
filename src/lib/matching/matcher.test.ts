@@ -10,73 +10,13 @@ import {
   type TrackKey,
 } from './matcher'
 
-describe('buildMapKey', () => {
-  it('builds normalized variants from map metadata', () => {
-    const variants = buildMapKey({
-      levelAuthor: 'OmaruPoko',
-      songAuthor: 'OmaruPoko',
-      songName: 'Crab Rave',
-    })
-    expect(variants.length).toBeGreaterThan(0)
-    expect(variants).toContain('omarupokoomarupokocrabrave')
-  })
+function makeMapKey(index: number, artist: string, title: string): MapKey {
+  return { index, ...buildMapKey({ levelAuthor: '', songAuthor: artist, songName: title }) }
+}
 
-  it('strips album parentheses before normalizing', () => {
-    const variants = buildMapKey({
-      levelAuthor: 'Mapper',
-      songAuthor: 'Artist',
-      songName: 'Song (Remaster)',
-    })
-    // Should not contain "remaster" in the variants
-    expect(variants.every((v) => !v.includes('remaster'))).toBe(true)
-  })
-
-  it('strips superfluous words before normalizing', () => {
-    const variants = buildMapKey({
-      levelAuthor: 'Mapper',
-      songAuthor: 'Artist',
-      songName: 'Song Deluxe Edition',
-    })
-    expect(variants.every((v) => !v.includes('deluxe'))).toBe(true)
-    expect(variants.every((v) => !v.includes('edition'))).toBe(true)
-  })
-
-  it('handles empty strings', () => {
-    const variants = buildMapKey({
-      levelAuthor: '',
-      songAuthor: '',
-      songName: '',
-    })
-    expect(variants).toEqual([])
-  })
-})
-
-describe('buildTrackKey', () => {
-  it('builds normalized variants from track metadata', () => {
-    const variants = buildTrackKey({
-      artist: 'Camellia',
-      title: 'Body F10ating10',
-    })
-    expect(variants.length).toBeGreaterThan(0)
-    expect(variants).toContain('camelliabodyf10ating10')
-  })
-
-  it('strips album parentheses before normalizing', () => {
-    const variants = buildTrackKey({
-      artist: 'Artist',
-      title: 'Song (Deluxe Edition)',
-    })
-    expect(variants.every((v) => !v.includes('deluxe'))).toBe(true)
-  })
-
-  it('handles empty strings', () => {
-    const variants = buildTrackKey({
-      artist: '',
-      title: '',
-    })
-    expect(variants).toEqual([])
-  })
-})
+function makeTrackKey(index: number, artist: string, title: string): TrackKey {
+  return { index, ...buildTrackKey({ artist, title }) }
+}
 
 describe('extractTrigrams', () => {
   it('extracts all 3-char substrings', () => {
@@ -93,55 +33,89 @@ describe('extractTrigrams', () => {
   })
 })
 
+describe('buildMapKey', () => {
+  it('builds separate artist + title variants', () => {
+    const key = buildMapKey({
+      levelAuthor: 'OmaruPoko',
+      songAuthor: 'OmaruPoko',
+      songName: 'Crab Rave',
+    })
+    expect(key.artistVariants.length).toBeGreaterThan(0)
+    expect(key.titleVariants.length).toBeGreaterThan(0)
+    expect(key.artistVariants).toContain('omarupoko')
+    expect(key.titleVariants).toContain('crabrave')
+  })
+
+  it('strips album parentheses from title', () => {
+    const key = buildMapKey({
+      levelAuthor: 'Mapper',
+      songAuthor: 'Artist',
+      songName: 'Song (Remaster)',
+    })
+    expect(key.titleVariants.every((v) => !v.includes('remaster'))).toBe(true)
+  })
+
+  it('strips superfluous words from title', () => {
+    const key = buildMapKey({
+      levelAuthor: 'Mapper',
+      songAuthor: 'Artist',
+      songName: 'Song Deluxe Edition',
+    })
+    expect(key.titleVariants.every((v) => !v.includes('deluxe'))).toBe(true)
+  })
+
+  it('handles empty strings', () => {
+    const key = buildMapKey({
+      levelAuthor: '',
+      songAuthor: '',
+      songName: '',
+    })
+    expect(key.artistVariants).toEqual([])
+    expect(key.titleVariants).toEqual([])
+  })
+})
+
+describe('buildTrackKey', () => {
+  it('builds separate artist + title variants', () => {
+    const key = buildTrackKey({
+      artist: 'Camellia',
+      title: 'Body F10ating10',
+    })
+    expect(key.artistVariants).toContain('camellia')
+    expect(key.titleVariants).toContain('bodyf10ating10')
+  })
+
+  it('handles empty strings', () => {
+    const key = buildTrackKey({
+      artist: '',
+      title: '',
+    })
+    expect(key.artistVariants).toEqual([])
+    expect(key.titleVariants).toEqual([])
+  })
+})
+
 describe('buildMatchIndex', () => {
-  it('builds a variant index from map keys', () => {
+  it('builds a title trigram index', () => {
     const maps: MapKey[] = [
-      { index: 0, variants: ['camellia', 'camellia'] },
-      { index: 1, variants: ['omarupoko crabrave'] },
+      makeMapKey(0, 'Camellia', 'Body F10ating10'),
+      makeMapKey(1, 'OmaruPoko', 'Crab Rave'),
     ]
     const index = buildMatchIndex(maps)
 
-    expect(index.variantIndex.has('camellia')).toBe(true)
-    expect(index.variantIndex.get('camellia')).toEqual([0])
-    expect(index.variantIndex.has('omarupoko crabrave')).toBe(true)
-  })
-
-  it('builds trigram index for candidate retrieval', () => {
-    const maps: MapKey[] = [
-      { index: 0, variants: ['camellia body'] },
-      { index: 1, variants: ['camellia ghost'] },
-    ]
-    const index = buildMatchIndex(maps)
-
-    // 'cam' trigram should be in both maps
-    expect(index.trigramIndex.has('cam')).toBe(true)
-    expect(index.trigramIndex.get('cam')!.has(0)).toBe(true)
-    expect(index.trigramIndex.get('cam')!.has(1)).toBe(true)
-
-    // 'bod' trigram should only be in map 0
-    expect(index.trigramIndex.has('bod')).toBe(true)
-    expect(index.trigramIndex.get('bod')!.has(0)).toBe(true)
-    expect(index.trigramIndex.get('bod')!.has(1)).toBe(false)
-  })
-
-  it('deduplicates map indices in the same bucket', () => {
-    const maps: MapKey[] = [
-      { index: 0, variants: ['camellia', 'camellia body'] },
-    ]
-    const index = buildMatchIndex(maps)
-
-    // 'camellia' appears twice in variants but should only have index 0 once
-    expect(index.variantIndex.get('camellia')).toEqual([0])
+    expect(index.titleVariantIndex.has('bodyf10ating10')).toBe(true)
+    expect(index.titleTrigramIndex.has('bod')).toBe(true)
+    expect(index.titleTrigramIndex.get('bod')!.has(0)).toBe(true)
   })
 })
 
 describe('matchAllTracks', () => {
-  it('matches tracks to maps with exact variant match', () => {
+  it('matches tracks to maps with exact title + artist match', () => {
     const tracks: TrackKey[] = [
-      { index: 0, variants: ['camellia body'] },
+      makeTrackKey(0, 'Camellia', 'Body F10ating10'),
     ]
     const maps: MapKey[] = [
-      { index: 0, variants: ['camellia body'] },
+      makeMapKey(0, 'Camellia', 'Body F10ating10'),
     ]
 
     const results = matchAllTracks(tracks, maps, 0.8)
@@ -150,12 +124,12 @@ describe('matchAllTracks', () => {
     expect(results[0].mapIndices).toContain(0)
   })
 
-  it('matches via contains relationship', () => {
+  it('matches via contains relationship in both title and artist', () => {
     const tracks: TrackKey[] = [
-      { index: 0, variants: ['camellia'] },
+      makeTrackKey(0, 'Camellia', 'Body'),
     ]
     const maps: MapKey[] = [
-      { index: 0, variants: ['camellia body f10ating10'] },
+      makeMapKey(0, 'Camellia', 'Body F10ating10'),
     ]
 
     const results = matchAllTracks(tracks, maps, 0.8)
@@ -164,18 +138,12 @@ describe('matchAllTracks', () => {
   })
 
   it('matches BeatSaver map to Subsonic track (Camellia)', () => {
-    const trackVariants = buildTrackKey({
-      artist: 'Camellia',
-      title: 'Body F10ating10',
-    })
-    const mapVariants = buildMapKey({
-      levelAuthor: 'Camellia',
-      songAuthor: 'Camellia',
-      songName: 'Body F10ating10',
-    })
-
-    const tracks: TrackKey[] = [{ index: 0, variants: trackVariants }]
-    const maps: MapKey[] = [{ index: 0, variants: mapVariants }]
+    const tracks: TrackKey[] = [
+      makeTrackKey(0, 'Camellia', 'Body F10ating10'),
+    ]
+    const maps: MapKey[] = [
+      makeMapKey(0, 'Camellia', 'Body F10ating10'),
+    ]
 
     const results = matchAllTracks(tracks, maps, 0.8)
     expect(results).toHaveLength(1)
@@ -183,30 +151,49 @@ describe('matchAllTracks', () => {
   })
 
   it('matches Crab Rave with OmaruPoko', () => {
-    const trackVariants = buildTrackKey({
-      artist: 'OmaruPoko',
-      title: 'Crab Rave',
-    })
-    const mapVariants = buildMapKey({
-      levelAuthor: 'OmaruPoko',
-      songAuthor: 'OmaruPoko',
-      songName: 'Crab Rave',
-    })
-
-    const tracks: TrackKey[] = [{ index: 0, variants: trackVariants }]
-    const maps: MapKey[] = [{ index: 0, variants: mapVariants }]
+    const tracks: TrackKey[] = [
+      makeTrackKey(0, 'OmaruPoko', 'Crab Rave'),
+    ]
+    const maps: MapKey[] = [
+      makeMapKey(0, 'OmaruPoko', 'Crab Rave'),
+    ]
 
     const results = matchAllTracks(tracks, maps, 0.8)
     expect(results).toHaveLength(1)
     expect(results[0].mapIndices).toContain(0)
   })
 
-  it('does not match completely different tracks', () => {
+  it('does not match when title matches but artist does not', () => {
     const tracks: TrackKey[] = [
-      { index: 0, variants: ['completely different song'] },
+      makeTrackKey(0, 'Completely Different Artist', 'Body F10ating10'),
     ]
     const maps: MapKey[] = [
-      { index: 0, variants: ['totally unrelated map'] },
+      makeMapKey(0, 'Camellia', 'Body F10ating10'),
+    ]
+
+    const results = matchAllTracks(tracks, maps, 0.8)
+    expect(results).toHaveLength(0)
+  })
+
+  it('does not match completely different tracks', () => {
+    const tracks: TrackKey[] = [
+      makeTrackKey(0, 'Unknown Artist', 'Unknown Song'),
+    ]
+    const maps: MapKey[] = [
+      makeMapKey(0, 'Other Artist', 'Other Song'),
+    ]
+
+    const results = matchAllTracks(tracks, maps, 0.8)
+    expect(results).toHaveLength(0)
+  })
+
+  it('does not match All India Radio with Allison (false positive)', () => {
+    // This was a false positive in the old algorithm
+    const tracks: TrackKey[] = [
+      makeTrackKey(0, 'All India Radio', 'Let Me Remain'),
+    ]
+    const maps: MapKey[] = [
+      makeMapKey(0, 'Allison and drameko', 'Pumpernickel'),
     ]
 
     const results = matchAllTracks(tracks, maps, 0.8)
@@ -215,11 +202,11 @@ describe('matchAllTracks', () => {
 
   it('filters to only tracks with matches', () => {
     const tracks: TrackKey[] = [
-      { index: 0, variants: ['camellia body'] },
-      { index: 1, variants: ['totally different'] },
+      makeTrackKey(0, 'Camellia', 'Body F10ating10'),
+      makeTrackKey(1, 'Unknown', 'Unknown'),
     ]
     const maps: MapKey[] = [
-      { index: 0, variants: ['camellia body'] },
+      makeMapKey(0, 'Camellia', 'Body F10ating10'),
     ]
 
     const results = matchAllTracks(tracks, maps, 0.8)
@@ -229,11 +216,11 @@ describe('matchAllTracks', () => {
 
   it('matches multiple maps to a single track', () => {
     const tracks: TrackKey[] = [
-      { index: 0, variants: ['camellia body'] },
+      makeTrackKey(0, 'Camellia', 'Body F10ating10'),
     ]
     const maps: MapKey[] = [
-      { index: 0, variants: ['camellia body'] },
-      { index: 1, variants: ['camellia body'] },
+      makeMapKey(0, 'Camellia', 'Body F10ating10'),
+      makeMapKey(1, 'Camellia', 'Body F10ating10'),
     ]
 
     const results = matchAllTracks(tracks, maps, 0.8)
@@ -243,28 +230,28 @@ describe('matchAllTracks', () => {
 
   it('handles empty inputs', () => {
     expect(matchAllTracks([], [], 0.8)).toEqual([])
-    expect(matchAllTracks([], [{ index: 0, variants: ['test'] }], 0.8)).toEqual([])
-    expect(matchAllTracks([{ index: 0, variants: ['test'] }], [], 0.8)).toEqual([])
+    expect(matchAllTracks([], [makeMapKey(0, 'A', 'B')], 0.8)).toEqual([])
+    expect(matchAllTracks([makeTrackKey(0, 'A', 'B')], [], 0.8)).toEqual([])
   })
 })
 
 describe('computeMatchScore', () => {
-  it('returns 1.0 for identical variants', () => {
-    expect(computeMatchScore(['hello'], ['hello'])).toBe(1.0)
+  it('returns 1.0 for identical title + artist', () => {
+    const track = makeTrackKey(0, 'Camellia', 'Body F10ating10')
+    const map = makeMapKey(0, 'Camellia', 'Body F10ating10')
+    expect(computeMatchScore(track, map)).toBe(1.0)
   })
 
-  it('returns high score for similar variants', () => {
-    const score = computeMatchScore(['camellia body'], ['camellia body f10ating10'])
-    expect(score).toBeGreaterThanOrEqual(0.8)
+  it('returns low score when artist does not match', () => {
+    const track = makeTrackKey(0, 'Camellia', 'Body F10ating10')
+    const map = makeMapKey(0, 'Allison', 'Body F10ating10')
+    // Title matches perfectly but artist doesn't — min(title, artist) should be below threshold
+    expect(computeMatchScore(track, map)).toBeLessThan(0.8)
   })
 
-  it('returns low score for different variants', () => {
-    const score = computeMatchScore(['abc'], ['xyz'])
-    expect(score).toBeLessThan(0.5)
-  })
-
-  it('returns best score across all variant pairs', () => {
-    const score = computeMatchScore(['abc', 'hello world'], ['xyz', 'hello world'])
-    expect(score).toBe(1.0) // matches on second pair
+  it('returns low score when title does not match', () => {
+    const track = makeTrackKey(0, 'Camellia', 'Body F10ating10')
+    const map = makeMapKey(0, 'Camellia', 'Completely Different Song')
+    expect(computeMatchScore(track, map)).toBeLessThan(0.8)
   })
 })

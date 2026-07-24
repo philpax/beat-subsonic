@@ -134,13 +134,20 @@ export function tokenSetSimilarity(a: string, b: string): number {
   return denom > 0 ? intersection / denom : 0.0
 }
 
+/** Minimum length for a contains check to be meaningful. */
+const MIN_CONTAINS_LENGTH = 3
+
 /**
  * Check if one string contains the other (either direction).
  * Returns 0.8 if true, 0 otherwise.
+ * Ignores contains when the shorter string is too short (< 3 chars).
  */
 function containsCheck(a: string, b: string): number {
   if (a.length === 0 || b.length === 0) return 0.0
   if (a === b) return 1.0
+  // Only count contains if the shorter string is long enough to be meaningful
+  const shorter = a.length < b.length ? a : b
+  if (shorter.length < MIN_CONTAINS_LENGTH) return 0.0
   if (a.includes(b) || b.includes(a)) return 0.8
   return 0.0
 }

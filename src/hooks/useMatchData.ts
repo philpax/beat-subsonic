@@ -114,7 +114,7 @@ export function useMatchData() {
       // Build keys for score computation (needed after worker returns)
       const mapKeys: MapKey[] = songs.map((song, index) => ({
         index,
-        variants: buildMapKey({
+        ...buildMapKey({
           levelAuthor: song.level_author,
           songAuthor: song.song_author,
           songName: song.song_name,
@@ -122,7 +122,7 @@ export function useMatchData() {
       }))
       const trackKeys: TrackKey[] = subsonicTracks.map((track, index) => ({
         index,
-        variants: buildTrackKey({
+        ...buildTrackKey({
           artist: track.artist,
           title: track.title,
         }),
@@ -154,8 +154,8 @@ export function useMatchData() {
         const matches: MatchedMap[] = mr.mapIndices.map((mapIdx) => {
           const song = songs[mapIdx]
           const score = computeMatchScore(
-            trackKeys[mr.trackIndex].variants,
-            mapKeys[mapIdx].variants
+            trackKeys[mr.trackIndex],
+            mapKeys[mapIdx]
           )
           return { song, score }
         })

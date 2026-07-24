@@ -2,15 +2,7 @@
  * Web Worker for running the matching engine off the main thread.
  *
  * Supports partitioning: the main thread can spawn N workers, each handling
- * a slice of tracks against the full map set. Each worker builds its own
- * trigram index from the maps (duplicated memory, but avoids cross-worker
- * communication overhead).
- *
- * Message protocol:
- * - Request: { type: 'match', tracks, maps, threshold, partition, totalPartitions }
- * - Progress: { type: 'progress', phase, current, total, partition }
- * - Result: { type: 'result', results, partition }
- * - Error: { type: 'error', error, partition }
+ * a slice of tracks against the full map set.
  */
 
 import {
@@ -27,9 +19,7 @@ interface MatchWorkerRequest {
   tracks: { index: number; artist: string; title: string }[]
   maps: { index: number; levelAuthor: string; songAuthor: string; songName: string }[]
   threshold: number
-  /** Which partition this worker handles (0-based). */
   partition: number
-  /** Total number of partitions. */
   totalPartitions: number
 }
 
@@ -53,7 +43,7 @@ self.onmessage = (event: MessageEvent<MatchWorkerRequest>) => {
   if (type !== 'match') return
 
   try {
-    // Phase 1: Build track keys (only for this partition's slice)
+    // Phase 1: Build track keys
     self.postMessage({
       type: 'progress',
       phase: 'building-keys',
@@ -66,7 +56,7 @@ self.onmessage = (event: MessageEvent<MatchWorkerRequest>) => {
     for (let i = 0; i < tracks.length; i++) {
       trackKeys.push({
         index: tracks[i].index,
-        variants: buildTrackKey(tracks[i]),
+        ...buildTrackKey(tracks[i]),
       })
       if (i % 1000 === 0) {
         self.postMessage({
@@ -79,12 +69,12 @@ self.onmessage = (event: MessageEvent<MatchWorkerRequest>) => {
       }
     }
 
-    // Phase 2: Build map keys (all maps — each worker builds its own index)
+    // Phase 2: Build map keys
     const mapKeys: MapKey[] = []
     for (let i = 0; i < maps.length; i++) {
       mapKeys.push({
         index: maps[i].index,
-        variants: buildMapKey(maps[i]),
+        ...buildMapKey(maps[i]),
       })
       if (i % 1000 === 0) {
         self.postMessage({
@@ -97,7 +87,7 @@ self.onmessage = (event: MessageEvent<MatchWorkerRequest>) => {
       }
     }
 
-    // Phase 3: Run matching (only on this partition's tracks)
+    // Phase 3: Run matching
     self.postMessage({
       type: 'progress',
       phase: 'matching',

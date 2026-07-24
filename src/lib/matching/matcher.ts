@@ -4,16 +4,15 @@
  * Pure functions only (no I/O). All decision logic is testable in Node.
  *
  * Strategy:
- * - Build a trigram index from BeatSaver map variants for O(1) candidate lookup
- * - For each track, extract trigrams and find candidate maps that share trigrams
- * - Check exact/contains match first, then fuzzy match on candidates only
- * - A match is found if ANY normalized variant of the track's key contains
- *   (or is contained by) ANY normalized variant of the map's key, OR if the
- *   fuzzy match score ≥ threshold.
+ * - Normalise artist and title separately, not as a concatenated blob
+ * - A track matches a map if:
+ *   1. The track title is a substring of the map song name (or vice versa), AND
+ *      the track artist is a substring of the map song author (or vice versa)
+ *   2. OR the title similarity ≥ threshold AND the artist similarity ≥ threshold
+ * - This prevents false positives where a long concatenated blob happens to
+ *   share enough characters with an unrelated map to score above threshold
  *
- * Memory tradeoff: the trigram index uses more memory (Map<trigram, Set<mapIdx>>)
- * but eliminates the O(N²) full scan. For 340k maps with ~2 variants each,
- * the index has ~2-4M entries — manageable in a worker.
+ * Memory tradeoff: trigram index on title variants for candidate retrieval.
  */
 
 import { normalizeVariants, stripAlbumParentheses, stripSuperfluousWords } from './normalize'
@@ -21,24 +20,32 @@ import { fuzzyMatch } from './fuzzy'
 
 // ---- Types ----
 
-/** A BeatSaver map with its pre-computed normalized variants. */
+/** A BeatSaver map with pre-computed normalized artist + title variants. */
 export interface MapKey {
   index: number
+  /** Normalised variants of the song author (artist). */
+  artistVariants: string[]
+  /** Normalised variants of the song name (title). */
+  titleVariants: string[]
+  /** Legacy field — combined variants for backward compat. Kept empty. */
   variants: string[]
 }
 
-/** A Subsonic track with its pre-computed normalized variants. */
+/** A Subsonic track with pre-computed normalized artist + title variants. */
 export interface TrackKey {
   index: number
+  artistVariants: string[]
+  titleVariants: string[]
+  /** Legacy field — combined variants for backward compat. Kept empty. */
   variants: string[]
 }
 
 /** Pre-built index for fast map lookups. */
 export interface MatchIndex {
-  /** Maps each normalized variant string → array of map indices (exact match). */
-  variantIndex: Map<string, number[]>
-  /** Maps each trigram (3-char substring) → set of map indices that contain it. */
-  trigramIndex: Map<string, Set<number>>
+  /** Maps each title trigram → set of map indices. */
+  titleTrigramIndex: Map<string, Set<number>>
+  /** Maps each exact title variant → array of map indices. */
+  titleVariantIndex: Map<string, number[]>
 }
 
 /** Result of matching a single track to maps. */
@@ -49,53 +56,50 @@ export interface MatchResult {
 
 // ---- Key building (pure) ----
 
+/** Minimum length for a variant to be usable for matching. */
+const MIN_VARIANT_LENGTH = 3
+
+/** Normalise a single field (artist or title) into variants. */
+function normalizeField(s: string): string[] {
+  const cleaned = stripSuperfluousWords(stripAlbumParentheses(s))
+  return normalizeVariants(cleaned).filter((v) => v.length >= MIN_VARIANT_LENGTH)
+}
+
 /**
- * Build normalized variants for a BeatSaver map.
- *
- * Applies stripAlbumParentheses + stripSuperfluousWords first, then
- * normalizes the combined "levelAuthor songAuthor songName" string.
- *
- * Returns up to 2 variants (stripped + spaced).
+ * Build normalized artist + title variants for a BeatSaver map.
+ * Artist and title are normalised separately to enable component-wise matching.
  */
 export function buildMapKey(song: {
   levelAuthor: string
   songAuthor: string
   songName: string
-}): string[] {
-  const name = stripSuperfluousWords(stripAlbumParentheses(song.songName))
-  const author = stripSuperfluousWords(stripAlbumParentheses(song.songAuthor))
-  const levelAuthor = stripSuperfluousWords(stripAlbumParentheses(song.levelAuthor))
-  const combined = `${levelAuthor} ${author} ${name}`.trim()
-  return normalizeVariants(combined)
+}): Omit<MapKey, 'index'> {
+  return {
+    artistVariants: normalizeField(song.songAuthor),
+    titleVariants: normalizeField(song.songName),
+    variants: [],
+  }
 }
 
 /**
- * Build normalized variants for a Subsonic track.
- *
- * Applies stripAlbumParentheses + stripSuperfluousWords first, then
- * normalizes the combined "artist title" string.
- *
- * Returns up to 2 variants (stripped + spaced).
+ * Build normalized artist + title variants for a Subsonic track.
  */
 export function buildTrackKey(track: {
   artist: string
   title: string
-}): string[] {
-  const title = stripSuperfluousWords(stripAlbumParentheses(track.title))
-  const artist = stripSuperfluousWords(stripAlbumParentheses(track.artist))
-  const combined = `${artist} ${title}`.trim()
-  return normalizeVariants(combined)
+}): Omit<TrackKey, 'index'> {
+  return {
+    artistVariants: normalizeField(track.artist),
+    titleVariants: normalizeField(track.title),
+    variants: [],
+  }
 }
 
 // ---- Trigram extraction (pure) ----
 
-/** Minimum variant length to extract trigrams from. */
 const MIN_TRIGRAM_LENGTH = 3
 
-/**
- * Extract all trigrams (3-character substrings) from a string.
- * For strings shorter than 3 chars, returns the string itself.
- */
+/** Extract all trigrams (3-character substrings) from a string. */
 export function extractTrigrams(s: string): string[] {
   if (s.length < MIN_TRIGRAM_LENGTH) return [s]
   const trigrams: string[] = []
@@ -108,117 +112,156 @@ export function extractTrigrams(s: string): string[] {
 // ---- Index building (pure) ----
 
 /**
- * Build a match index from an array of map keys.
- *
- * Creates:
- * - A variant index: Map<normalizedVariant, number[]> for O(1) exact lookup
- * - A trigram index: Map<trigram, Set<number>> for candidate retrieval
- *
- * The trigram index maps each 3-char substring to the set of map indices
- * whose variants contain that trigram. This lets us find candidate maps
- * for a track in O(trigrams_per_track) instead of scanning all maps.
+ * Build a match index from map keys.
+ * Indexes title variants for candidate retrieval via trigrams.
  */
 export function buildMatchIndex(maps: MapKey[]): MatchIndex {
-  const variantIndex = new Map<string, number[]>()
-  const trigramIndex = new Map<string, Set<number>>()
+  const titleTrigramIndex = new Map<string, Set<number>>()
+  const titleVariantIndex = new Map<string, number[]>()
 
   for (const map of maps) {
-    for (const variant of map.variants) {
-      // Add to variant index (exact match)
-      const existing = variantIndex.get(variant)
+    for (const titleVariant of map.titleVariants) {
+      // Exact title variant index
+      const existing = titleVariantIndex.get(titleVariant)
       if (existing) {
         if (!existing.includes(map.index)) existing.push(map.index)
       } else {
-        variantIndex.set(variant, [map.index])
+        titleVariantIndex.set(titleVariant, [map.index])
       }
 
-      // Add to trigram index (candidate retrieval)
-      const trigrams = extractTrigrams(variant)
+      // Trigram index
+      const trigrams = extractTrigrams(titleVariant)
       for (const trigram of trigrams) {
-        let set = trigramIndex.get(trigram)
+        let set = titleTrigramIndex.get(trigram)
         if (!set) {
           set = new Set<number>()
-          trigramIndex.set(trigram, set)
+          titleTrigramIndex.set(trigram, set)
         }
         set.add(map.index)
       }
     }
   }
 
-  return { variantIndex, trigramIndex }
+  return { titleTrigramIndex, titleVariantIndex }
 }
 
+/** Maximum candidates to consider per track variant (performance guard). */
+const MAX_CANDIDATES = 2000
+
 /**
- * Find candidate map indices for a track variant using the trigram index.
- * Returns maps that share at least one trigram with the track variant.
- * This is O(trigrams_per_track) for lookup, not O(total_maps).
+ * Find candidate map indices for a track title variant using the trigram index.
+ * Only returns maps that share a meaningful number of trigrams with the track
+ * variant. The threshold scales with variant length — longer variants require
+ * more shared trigrams, which eliminates false candidates from common trigrams.
  */
 function findCandidates(
-  trackVariant: string,
+  titleVariant: string,
   index: MatchIndex
 ): Set<number> {
-  const candidates = new Set<number>()
-  const trigrams = extractTrigrams(trackVariant)
-  for (const trigram of trigrams) {
-    const maps = index.trigramIndex.get(trigram)
+  const trigrams = extractTrigrams(titleVariant)
+  const uniqueTrigrams = new Set(trigrams)
+  // Require at least 25% of the variant's trigrams to match, minimum 2
+  const minShared = Math.max(2, Math.ceil(uniqueTrigrams.size * 0.25))
+
+  const candidateCounts = new Map<number, number>()
+  for (const trigram of uniqueTrigrams) {
+    const maps = index.titleTrigramIndex.get(trigram)
     if (maps) {
       for (const mapIdx of maps) {
-        candidates.add(mapIdx)
+        candidateCounts.set(mapIdx, (candidateCounts.get(mapIdx) ?? 0) + 1)
       }
     }
   }
-  return candidates
+
+  const result = new Set<number>()
+  for (const [mapIdx, count] of candidateCounts) {
+    if (count >= minShared) {
+      result.add(mapIdx)
+      if (result.size >= MAX_CANDIDATES) break
+    }
+  }
+  return result
 }
 
 // ---- Matching (pure) ----
 
 /**
- * Match a single track's variants against the match index.
- *
- * Checks:
- * 1. Exact variant match (O(1) lookup in variantIndex)
- * 2. Contains check + fuzzy match on trigram candidates only
- *
- * Returns indices of all matching maps.
+ * Check if any artist variant of the track matches any artist variant of the map.
+ * Match = contains (either direction) OR fuzzyMatch ≥ threshold.
+ */
+function artistMatches(
+  trackArtistVariants: string[],
+  mapArtistVariants: string[],
+  threshold: number
+): boolean {
+  for (const ta of trackArtistVariants) {
+    for (const ma of mapArtistVariants) {
+      if (ta === ma) return true
+      if (ta.includes(ma) || ma.includes(ta)) return true
+      if (fuzzyMatch(ta, ma) >= threshold) return true
+    }
+  }
+  return false
+}
+
+/**
+ * Check if any title variant of the track matches any title variant of the map.
+ * Match = contains (either direction) OR fuzzyMatch ≥ threshold.
+ */
+function titleMatches(
+  trackTitleVariants: string[],
+  mapTitleVariants: string[],
+  threshold: number
+): boolean {
+  for (const tt of trackTitleVariants) {
+    for (const mt of mapTitleVariants) {
+      if (tt === mt) return true
+      if (tt.includes(mt) || mt.includes(tt)) return true
+      if (fuzzyMatch(tt, mt) >= threshold) return true
+    }
+  }
+  return false
+}
+
+/**
+ * Match a single track against the match index.
+ * A match requires BOTH title AND artist to match.
  */
 export function matchTrackToMaps(
-  trackVariants: string[],
+  track: TrackKey,
   index: MatchIndex,
   maps: MapKey[],
   threshold: number
 ): number[] {
   const matched = new Set<number>()
 
-  for (const trackVariant of trackVariants) {
-    // 1. Exact match
-    const exact = index.variantIndex.get(trackVariant)
+  for (const titleVariant of track.titleVariants) {
+    // 1. Exact title match
+    const exact = index.titleVariantIndex.get(titleVariant)
     if (exact) {
-      for (const idx of exact) matched.add(idx)
+      for (const mapIdx of exact) {
+        if (matched.has(mapIdx)) continue
+        // Verify artist also matches
+        if (artistMatches(track.artistVariants, maps[mapIdx].artistVariants, threshold)) {
+          matched.add(mapIdx)
+        }
+      }
     }
 
-    // 2. Find candidates via trigram index, then check contains + fuzzy
-    const candidates = findCandidates(trackVariant, index)
+    // 2. Find candidates via trigram index, then check title + artist
+    const candidates = findCandidates(titleVariant, index)
     for (const mapIdx of candidates) {
       if (matched.has(mapIdx)) continue
 
-      const mapVars = maps[mapIdx]?.variants
-      if (!mapVars) continue
+      const map = maps[mapIdx]
+      if (!map) continue
 
-      for (const mapVariant of mapVars) {
-        // Contains check (either direction)
-        if (
-          trackVariant.includes(mapVariant) ||
-          mapVariant.includes(trackVariant)
-        ) {
-          matched.add(mapIdx)
-          break
-        }
-
-        // Fuzzy match
-        if (fuzzyMatch(trackVariant, mapVariant) >= threshold) {
-          matched.add(mapIdx)
-          break
-        }
+      // Both title AND artist must match
+      if (
+        titleMatches(track.titleVariants, map.titleVariants, threshold) &&
+        artistMatches(track.artistVariants, map.artistVariants, threshold)
+      ) {
+        matched.add(mapIdx)
       }
     }
   }
@@ -229,14 +272,12 @@ export function matchTrackToMaps(
 /**
  * Match all tracks against all maps.
  *
- * Builds the trigram index, then batch-matches all tracks.
- * Returns only tracks with ≥1 match.
+ * A track matches a map if BOTH the title AND the artist match (via
+ * contains or fuzzy match ≥ threshold). This prevents false positives
+ * where a concatenated blob happens to share enough characters with
+ * an unrelated map.
  *
- * This is the main entry point for the matching engine.
- *
- * @param onProgress Optional callback called every `progressInterval` tracks
- *                   with (current, total). Use this to report progress from a
- *                   worker without blocking the main thread.
+ * @param onProgress Optional callback called every `progressInterval` tracks.
  */
 export function matchAllTracks(
   tracks: TrackKey[],
@@ -247,12 +288,6 @@ export function matchAllTracks(
 ): MatchResult[] {
   const index = buildMatchIndex(maps)
 
-  // Build a reverse lookup: map index → map variants (for fuzzy matching)
-  const mapVariantsByIndex = new Map<number, string[]>()
-  for (const map of maps) {
-    mapVariantsByIndex.set(map.index, map.variants)
-  }
-
   const results: MatchResult[] = []
 
   for (let i = 0; i < tracks.length; i++) {
@@ -262,50 +297,12 @@ export function matchAllTracks(
       onProgress(i, tracks.length)
     }
 
-    const matched = new Set<number>()
+    const mapIndices = matchTrackToMaps(track, index, maps, threshold)
 
-    for (const trackVariant of track.variants) {
-      // 1. Exact match
-      const exact = index.variantIndex.get(trackVariant)
-      if (exact) {
-        for (const idx of exact) matched.add(idx)
-      }
-
-      // 2. Find candidates via trigram index, then check contains + fuzzy
-      const candidates = findCandidates(trackVariant, index)
-      for (const mapIdx of candidates) {
-        if (matched.has(mapIdx)) continue
-
-        const mapVars = mapVariantsByIndex.get(mapIdx)
-        if (!mapVars) continue
-
-        let isMatch = false
-
-        for (const mapVariant of mapVars) {
-          // Contains check (either direction)
-          if (
-            trackVariant.includes(mapVariant) ||
-            mapVariant.includes(trackVariant)
-          ) {
-            isMatch = true
-            break
-          }
-
-          // Fuzzy match
-          if (fuzzyMatch(trackVariant, mapVariant) >= threshold) {
-            isMatch = true
-            break
-          }
-        }
-
-        if (isMatch) matched.add(mapIdx)
-      }
-    }
-
-    if (matched.size > 0) {
+    if (mapIndices.length > 0) {
       results.push({
         trackIndex: track.index,
-        mapIndices: Array.from(matched).sort((a, b) => a - b),
+        mapIndices,
       })
     }
   }
@@ -314,19 +311,31 @@ export function matchAllTracks(
 }
 
 /**
- * Compute the best match score between a track and a set of maps.
- * Returns the highest fuzzy match score across all variant pairs.
+ * Compute the best match score between a track and a map.
+ * Returns the average of the best title score and best artist score,
+ * so both components must be good for a high overall score.
  */
 export function computeMatchScore(
-  trackVariants: string[],
-  mapVariants: string[]
+  track: TrackKey,
+  map: MapKey
 ): number {
-  let best = 0
-  for (const tv of trackVariants) {
-    for (const mv of mapVariants) {
-      const score = fuzzyMatch(tv, mv)
-      if (score > best) best = score
+  let bestTitle = 0
+  for (const tt of track.titleVariants) {
+    for (const mt of map.titleVariants) {
+      const score = fuzzyMatch(tt, mt)
+      if (score > bestTitle) bestTitle = score
     }
   }
-  return best
+
+  let bestArtist = 0
+  for (const ta of track.artistVariants) {
+    for (const ma of map.artistVariants) {
+      const score = fuzzyMatch(ta, ma)
+      if (score > bestArtist) bestArtist = score
+    }
+  }
+
+  // Both must be decent — return the minimum so a high score requires
+  // both title and artist to match well
+  return Math.min(bestTitle, bestArtist)
 }
