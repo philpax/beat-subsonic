@@ -147,11 +147,15 @@ const LOOKALIKE_MAP: Record<string, string> = {
   '\uFF5E': '~',
 }
 
+/** Fast test: does the string contain any non-ASCII character? */
+const NON_ASCII = /[\u0080-\uffff]/
+
 /**
  * Fold Unicode lookalike characters to their ASCII equivalents.
  * Ported from blackbird-core/src/library.rs `fold_lookalikes`.
  */
 export function foldLookalikes(s: string): string {
+  if (!NON_ASCII.test(s)) return s
   let result = ''
   for (const ch of s) {
     result += LOOKALIKE_MAP[ch] ?? ch
@@ -167,6 +171,7 @@ export function foldLookalikes(s: string): string {
  * in the combining diacritical marks range (U+0300–U+036F).
  */
 export function foldDiacritics(s: string): string {
+  if (!NON_ASCII.test(s)) return s
   return s.normalize('NFKD').replace(/[\u0300-\u036F]/g, '')
 }
 
@@ -283,6 +288,54 @@ const SUPERFLUOUS_WORDS = new Set([
  * "deluxe", "remaster", "ep", "lp", etc. Only removes whole words —
  * "editionary" will NOT become "ary".
  */
+/** Parenthesized/bracketed mapper credit anywhere in an artist field, e.g. "(mapped by Roffle)". */
+const MAPPER_CREDIT_PAREN =
+  /[([{][^()[\]{}]*\b(?:beatmapp?e?d?|mapp?e?d?|charte?d?|edit(?:ed)?|remapp?e?d?)\s+by\b[^()[\]{}]*[)\]}]/gi
+
+/** A segment that is purely a mapper credit, e.g. "beatmap by kieve", "Edit by Barudaq". */
+const MAPPER_CREDIT_SEGMENT = /^\s*(?:beatmapp?e?d?|mapp?e?d?|charte?d?|edit(?:ed)?|remapp?e?d?)\s+by\b/i
+
+/** Hard separators between unrelated credits: "|", "//", ";". */
+const HARD_SEPARATOR = /\s*(?:\|+|\/\/+|;)\s*/
+
+/** Soft separators between collaborating artists. */
+const SOFT_SEPARATOR = /\s+(?:feat\.?|ft\.?|featuring|vs\.?|x|×|&|\+|and|with|w\/)\s+|\s*,\s*/i
+
+/**
+ * Split a (possibly messy) artist credit into candidate artist strings.
+ *
+ * Old BeatSaver maps conflate map author and track author: `level_author`
+ * frequently holds strings like "Camellia feat. nanahira",
+ * "gmtn (mapped by Roffle)", or "Shiggy Jr. | beatmap by kieve".
+ * This produces the cleaned full string plus each collaborator segment,
+ * with pure mapper credits dropped, so that exact index lookups succeed
+ * where fuzzy matching against the messy blob would have been required.
+ *
+ * The cleaned full string is always first; the original semantics of
+ * matching against the whole field are preserved by keeping it.
+ */
+export function splitArtistSegments(s: string): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+  const push = (v: string) => {
+    const trimmed = v.trim()
+    if (!trimmed || seen.has(trimmed) || MAPPER_CREDIT_SEGMENT.test(trimmed)) return
+    seen.add(trimmed)
+    out.push(trimmed)
+  }
+
+  const cleaned = s.replace(MAPPER_CREDIT_PAREN, ' ')
+  push(cleaned)
+  for (const hard of cleaned.split(HARD_SEPARATOR)) {
+    push(hard)
+    const soft = hard.split(SOFT_SEPARATOR)
+    if (soft.length > 1) {
+      for (const segment of soft) push(segment)
+    }
+  }
+  return out
+}
+
 export function stripSuperfluousWords(s: string): string {
   const words = s.split(/\s+/)
   const filtered = words.filter((w) => {

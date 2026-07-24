@@ -13,6 +13,10 @@
  *
  * Returns a value in [0, 1] where 1 = identical.
  */
+/** Shared scratch for jaroSimilarity — avoids two allocations per call. */
+let jaroScratchA = new Uint8Array(64)
+let jaroScratchB = new Uint8Array(64)
+
 export function jaroSimilarity(a: string, b: string): number {
   if (a.length === 0 || b.length === 0) return 0.0
   if (a === b) return 1.0
@@ -24,8 +28,10 @@ export function jaroSimilarity(a: string, b: string): number {
   const matchDistance = Math.floor(Math.max(aLen, bLen) / 2) - 1
   const effectiveDistance = Math.max(0, matchDistance)
 
-  const aMatches = new Array<boolean>(aLen).fill(false)
-  const bMatches = new Array<boolean>(bLen).fill(false)
+  if (jaroScratchA.length < aLen) jaroScratchA = new Uint8Array(aLen * 2)
+  if (jaroScratchB.length < bLen) jaroScratchB = new Uint8Array(bLen * 2)
+  const aMatches = jaroScratchA.fill(0, 0, aLen)
+  const bMatches = jaroScratchB.fill(0, 0, bLen)
 
   let matches = 0
 
@@ -37,8 +43,8 @@ export function jaroSimilarity(a: string, b: string): number {
     for (let j = start; j < end; j++) {
       if (bMatches[j]) continue
       if (a[i] !== b[j]) continue
-      aMatches[i] = true
-      bMatches[j] = true
+      aMatches[i] = 1
+      bMatches[j] = 1
       matches++
       break
     }
@@ -173,4 +179,164 @@ export function fuzzyMatch(a: string, b: string): number {
   const tokenSet = tokenSetSimilarity(a, b)
 
   return Math.max(contains, winkler, word, tokenSet)
+}
+
+// ---- Threshold-aware fast path ----
+
+/**
+ * Precomputed per-string facts for the threshold-aware fast path.
+ * Cached per normalized variant string; variants come from a bounded
+ * dataset, so an unbounded cache is fine.
+ */
+export interface StringMeta {
+  /** Token set, or null for single-token strings (token === the string). */
+  tokens: Set<string> | null
+  /** Number of tokens. */
+  tokenCount: number
+  /** First 4 chars packed big-endian into one int (0-padded), for prefix comparison. */
+  prefix4: number
+  /**
+   * Character counts over the 37-symbol normalized alphabet (space, a-z,
+   * 0-9). Bounds Jaro matches: m <= sum(min(countsA, countsB)).
+   */
+  charCounts: Uint8Array
+}
+
+const metaCache = new Map<string, StringMeta>()
+
+function packPrefix4(s: string): number {
+  let packed = 0
+  for (let i = 0; i < 4; i++) {
+    packed = (packed << 8) | (i < s.length ? s.charCodeAt(i) & 0xff : 0)
+  }
+  return packed
+}
+
+const CHAR_CLASSES = 37
+
+function countChars(s: string): Uint8Array {
+  const counts = new Uint8Array(CHAR_CLASSES)
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    // a-z → 1-26, 0-9 → 27-36, anything else (space) → 0
+    const slot = c >= 97 && c <= 122 ? c - 96 : c >= 48 && c <= 57 ? c - 21 : 0
+    if (counts[slot] < 255) counts[slot]++
+  }
+  return counts
+}
+
+/** Get (and cache) the precomputed metadata for a string. */
+export function stringMeta(s: string): StringMeta {
+  let meta = metaCache.get(s)
+  if (meta === undefined) {
+    const single = s.indexOf(' ') < 0
+    const tokens = single ? null : new Set(s.split(/\s+/).filter((w) => w.length > 0))
+    meta = {
+      tokens,
+      tokenCount: tokens ? tokens.size : s.length > 0 ? 1 : 0,
+      prefix4: packPrefix4(s),
+      charCounts: countChars(s),
+    }
+    metaCache.set(s, meta)
+  }
+  return meta
+}
+
+/** Common-prefix length (capped at 4) from two packed prefixes. */
+function prefixLength4(pa: number, pb: number, maxLen: number): number {
+  const cap = maxLen < 4 ? maxLen : 4
+  let prefix = 0
+  let shift = 24
+  while (prefix < cap && ((pa >>> shift) & 0xff) === ((pb >>> shift) & 0xff)) {
+    prefix++
+    shift -= 8
+  }
+  return prefix
+}
+
+/**
+ * Decide whether fuzzyMatch(a, b) >= threshold without always computing
+ * every metric. Produces the same verdict as `fuzzyMatch(a, b) >= threshold`.
+ *
+ * Optimizations over calling fuzzyMatch directly:
+ * - Token sets are cached per string (fuzzyMatch re-splits on every call).
+ * - Word-based Jaccard is skipped entirely: Jaccard i/(A+B-i) is always
+ *   <= token-set Dice 2i/(A+B), so it can never decide the max.
+ * - Jaro-Winkler (the most expensive metric) runs last, and only when a
+ *   length/prefix upper bound shows it could still reach the threshold:
+ *   jaro <= (min/a + min/b + 1)/3, winkler <= jaro + 0.1*prefix*(1-jaro).
+ */
+export function fuzzyMatchAtLeast(a: string, b: string, threshold: number): boolean {
+  if (a === b) return true
+  if (a.length === 0 || b.length === 0) return threshold <= 0
+  if (containsCheck(a, b) >= threshold) return true
+  return fuzzyBeyondContains(a, stringMeta(a), b, stringMeta(b), threshold)
+}
+
+/**
+ * Decide whether Dice token-set or Jaro-Winkler similarity reaches the
+ * threshold, given precomputed metadata. The caller is responsible for
+ * exact-equality and contains checks (matcher call sites already do them).
+ *
+ * - Word-based Jaccard is skipped entirely: Jaccard i/(A+B-i) is always
+ *   <= token-set Dice 2i/(A+B), so it can never decide the max.
+ * - When either side is a single token, Dice is capped at 2/(1+n) <= 2/3
+ *   (equal single tokens mean equal strings, handled by the caller), so
+ *   for thresholds above 2/3 the token phase is skipped without touching
+ *   the token sets.
+ * - Jaro-Winkler (the most expensive metric) runs last, and only when a
+ *   length/prefix upper bound shows it could still reach the threshold:
+ *   jaro <= (min/a + min/b + 1)/3, winkler <= jaro + 0.1*prefix*(1-jaro).
+ *   The prefix comes from packed prefix ints — no string reads at all on
+ *   the rejection path.
+ */
+export function fuzzyBeyondContains(
+  a: string,
+  am: StringMeta,
+  b: string,
+  bm: StringMeta,
+  threshold: number
+): boolean {
+  // Token-set (Dice) similarity
+  if (am.tokenCount > 0 && bm.tokenCount > 0) {
+    const diceUpper = (2 * Math.min(am.tokenCount, bm.tokenCount)) / (am.tokenCount + bm.tokenCount)
+    if (diceUpper >= threshold && am.tokens && bm.tokens) {
+      let intersection = 0
+      const [small, large] = am.tokens.size <= bm.tokens.size ? [am.tokens, bm.tokens] : [bm.tokens, am.tokens]
+      for (const w of small) {
+        if (large.has(w)) intersection++
+      }
+      if ((2 * intersection) / (am.tokenCount + bm.tokenCount) >= threshold) return true
+    } else if (diceUpper >= threshold && (!am.tokens || !bm.tokens)) {
+      // One side single-token: Dice can only reach 2/(1+n), n >= 2 impossible
+      // for threshold > 2/3; for lower thresholds check membership directly.
+      const single = am.tokens ? b : a
+      const multi = am.tokens ? am.tokens : bm.tokens
+      if (multi && multi.has(single) && 2 / (am.tokenCount + bm.tokenCount) >= threshold) return true
+    }
+  }
+
+  // Jaro-Winkler upper bounds, cheapest first:
+  // 1. length-only bound (free) — rejects very different lengths
+  // 2. character multiset intersection bound — m cannot exceed the shared
+  //    character count, which is far tighter than min-length for unrelated
+  //    strings of similar length (the common rejection case)
+  const minLen = Math.min(a.length, b.length)
+  const prefix = prefixLength4(am.prefix4, bm.prefix4, minLen)
+  const lenUpper = (minLen / a.length + minLen / b.length + 1) / 3
+  if (lenUpper + 0.1 * prefix * (1 - lenUpper) < threshold) return false
+
+  const ca = am.charCounts
+  const cb = bm.charCounts
+  let mMax = 0
+  for (let c = 0; c < ca.length; c++) {
+    mMax += ca[c] < cb[c] ? ca[c] : cb[c]
+  }
+  if (mMax === 0) return false
+  const m = mMax < minLen ? mMax : minLen
+  const jaroUpper = (m / a.length + m / b.length + 1) / 3
+  if (jaroUpper + 0.1 * prefix * (1 - jaroUpper) < threshold) return false
+
+  const jaro = jaroSimilarity(a, b)
+  return winklerSimilarity(a, b, jaro) >= threshold
 }

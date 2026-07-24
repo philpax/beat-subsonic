@@ -96,7 +96,7 @@ describe('buildTrackKey', () => {
 })
 
 describe('buildMatchIndex', () => {
-  it('builds a title trigram index', () => {
+  it('builds title and artist indexes', () => {
     const maps: MapKey[] = [
       makeMapKey(0, 'Camellia', 'Body F10ating10'),
       makeMapKey(1, 'OmaruPoko', 'Crab Rave'),
@@ -104,8 +104,11 @@ describe('buildMatchIndex', () => {
     const index = buildMatchIndex(maps)
 
     expect(index.titleVariantIndex.has('bodyf10ating10')).toBe(true)
-    expect(index.titleTrigramIndex.has('bod')).toBe(true)
-    expect(index.titleTrigramIndex.get('bod')!.has(0)).toBe(true)
+
+    const camelliaId = index.artistVariantIds.get('camellia')
+    expect(camelliaId).toBeDefined()
+    expect(index.artistVariantMaps[camelliaId!]).toEqual([0])
+    expect(index.mapArtistIds[0]).toContain(camelliaId)
   })
 })
 
