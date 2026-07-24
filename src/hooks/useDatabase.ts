@@ -48,7 +48,7 @@ export function useDatabase() {
 
   const loading = useRef(false)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (forceRefresh: boolean = false) => {
     if (loading.current) return
     loading.current = true
 
@@ -59,6 +59,23 @@ export function useDatabase() {
       await client.init()
 
       const stats = await client.getStats()
+
+      // If we already have cached data and this isn't a forced refresh,
+      // skip the network fetch entirely. GitHub raw doesn't expose ETag
+      // headers cross-origin (no Access-Control-Expose-Headers), so the
+      // ETag-based 304 check never works — every fetch downloads the full
+      // ~10MB file. Instead, use the SQLite cache and only re-fetch on
+      // explicit refresh.
+      if (!forceRefresh && stats.songCount > 0) {
+        setState({
+          status: 'ready',
+          error: null,
+          progress: null,
+          stats,
+          dataChanged: false,
+        })
+        return
+      }
 
       const result = await ensureDataLoaded((progress) => {
         setState((s) => ({
@@ -119,7 +136,7 @@ export function useDatabase() {
   }, [load])
 
   const refresh = useCallback(() => {
-    load()
+    load(true)
   }, [load])
 
   return { state, refresh }
