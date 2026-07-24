@@ -28,6 +28,7 @@
  */
 
 import {
+  extractRemixTags,
   normalizeVariants,
   splitArtistSegments,
   stripAlbumParentheses,
@@ -44,6 +45,8 @@ export interface MapKey {
   artistVariants: string[]
   /** Normalised variants of the song name (title). */
   titleVariants: string[]
+  /** Remixer-identity tokens from the title's version clauses (see extractRemixTags). */
+  remixTags: string[]
   /** Legacy field — combined variants for backward compat. Kept empty. */
   variants: string[]
 }
@@ -53,6 +56,8 @@ export interface TrackKey {
   index: number
   artistVariants: string[]
   titleVariants: string[]
+  /** Remixer-identity tokens from the title's version clauses (see extractRemixTags). */
+  remixTags: string[]
   /** Legacy field — combined variants for backward compat. Kept empty. */
   variants: string[]
 }
@@ -155,6 +160,17 @@ function addVariants(target: string[], seen: Set<string>, variants: string[]): v
  * an empty songAuthor; when songName contains " - ", the left side also
  * contributes artist variants and the right side title variants.
  */
+const remixTagCache = new Map<string, string[]>()
+
+function remixTagsOf(title: string): string[] {
+  let tags = remixTagCache.get(title)
+  if (tags === undefined) {
+    tags = extractRemixTags(title)
+    remixTagCache.set(title, tags)
+  }
+  return tags
+}
+
 export function buildMapKey(song: {
   levelAuthor: string
   songAuthor: string
@@ -164,9 +180,11 @@ export function buildMapKey(song: {
   const artistVariants: string[] = []
   addVariants(artistVariants, artistSeen, artistVariantsOf(song.songAuthor))
   addVariants(artistVariants, artistSeen, artistVariantsOf(song.levelAuthor))
+  const remixTags = remixTagsOf(song.songName)
+
   const dashIdx = song.songName.indexOf(' - ')
   if (dashIdx <= 0) {
-    return { artistVariants, titleVariants: titleVariantsOf(song.songName), variants: [] }
+    return { artistVariants, titleVariants: titleVariantsOf(song.songName), remixTags, variants: [] }
   }
 
   const titleSeen = new Set<string>()
@@ -175,7 +193,7 @@ export function buildMapKey(song: {
   addVariants(artistVariants, artistSeen, artistVariantsOf(song.songName.slice(0, dashIdx)))
   addVariants(titleVariants, titleSeen, titleVariantsOf(song.songName.slice(dashIdx + 3)))
 
-  return { artistVariants, titleVariants, variants: [] }
+  return { artistVariants, titleVariants, remixTags, variants: [] }
 }
 
 /**
@@ -189,6 +207,7 @@ export function buildTrackKey(track: {
     // The cached arrays are shared; treat them as immutable
     artistVariants: artistVariantsOf(track.artist),
     titleVariants: titleVariantsOf(track.title),
+    remixTags: remixTagsOf(track.title),
     variants: [],
   }
 }
@@ -560,6 +579,58 @@ function titleMatches(
   return false
 }
 
+/** Does any variant contain the given tag as a substring? */
+function variantsMention(variants: string[], tag: string): boolean {
+  for (const v of variants) {
+    if (v.includes(tag)) return true
+  }
+  return false
+}
+
+/**
+ * Check remix compatibility between a track and a map.
+ *
+ * A remix is a different musical work from the original, so a title match
+ * alone is not enough: "Cinema (Congorock remix)" must not match the
+ * original "Cinema" or "Cinema (Skrillex Remix)" maps.
+ *
+ * - Neither side has remix tags → compatible (original ↔ original).
+ * - Both sides tagged → compatible only when they share a tag.
+ * - One side tagged → compatible only when the other side mentions the
+ *   remixer somewhere in its artist/title (covers maps crediting the
+ *   remixer in the author field, e.g. songAuthor "Krayysh Remix", and
+ *   cover versions credited like "Camellia feat. Kasane Teto").
+ */
+function remixCompatible(track: TrackKey, map: MapKey): boolean {
+  const trackTags = track.remixTags
+  const mapTags = map.remixTags
+  if (trackTags.length === 0 && mapTags.length === 0) return true
+
+  for (const t of trackTags) {
+    for (const m of mapTags) {
+      if (t === m || t.includes(m) || m.includes(t)) return true
+    }
+  }
+
+  if (mapTags.length === 0) {
+    for (const tag of trackTags) {
+      if (variantsMention(map.artistVariants, tag) || variantsMention(map.titleVariants, tag)) {
+        return true
+      }
+    }
+    return false
+  }
+  if (trackTags.length === 0) {
+    for (const tag of mapTags) {
+      if (variantsMention(track.artistVariants, tag) || variantsMention(track.titleVariants, tag)) {
+        return true
+      }
+    }
+    return false
+  }
+  return false
+}
+
 // ---- Matching (pure) ----
 
 function matchTrackWithContext(ctx: MatcherContext, track: TrackKey): number[] {
@@ -576,6 +647,7 @@ function matchTrackWithContext(ctx: MatcherContext, track: TrackKey): number[] {
     if (exact) {
       for (const mapIdx of exact) {
         if (matched.has(mapIdx)) continue
+        if (!remixCompatible(track, maps[mapIdx])) continue
         if (artistMatches(ctx, resolution, track.artistVariants, trackArtistMetas, mapIdx)) {
           matched.add(mapIdx)
         }
@@ -592,6 +664,7 @@ function matchTrackWithContext(ctx: MatcherContext, track: TrackKey): number[] {
     const map = maps[mapIdx]
     if (!map) continue
 
+    if (!remixCompatible(track, map)) continue
     if (
       titleMatches(
         track.titleVariants,

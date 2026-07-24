@@ -256,6 +256,85 @@ export function stripAlbumParentheses(s: string): string {
   return result
 }
 
+/** Version clauses containing one of these words may identify a remix/edit. */
+const REMIX_KEYWORD = /\b(?:remix(?:ed)?|bootleg|flip|rework|remake|edit|mix|cover|mashup)\b/i
+
+/**
+ * Generic version words that don't identify WHO made the version —
+ * "(radio edit)" and "(extended mix)" are still the original work, while
+ * "(Congorock remix)" is not.
+ */
+const REMIX_GENERIC_WORDS = new Set([
+  'remix',
+  'remixed',
+  'bootleg',
+  'flip',
+  'rework',
+  'remake',
+  'edit',
+  'mix',
+  'cover',
+  'mashup',
+  'radio',
+  'extended',
+  'original',
+  'album',
+  'club',
+  'dub',
+  'single',
+  'version',
+  'ver',
+  'vip',
+  'instrumental',
+  'full',
+  'short',
+  'size',
+  'the',
+  'feat',
+  'featuring',
+])
+
+/**
+ * Extract remixer-identity tokens from a title's version clauses.
+ *
+ * Looks at parenthesized/bracketed groups and dash-separated suffixes; when
+ * a clause contains a remix-family keyword, the remaining non-generic words
+ * identify the remixer: "Cinema (Congorock remix)" → ["congorock"],
+ * "Cinema - Skrillex Remix" → ["skrillex"], "Cinema (radio edit)" → [].
+ *
+ * Used to keep remixes from matching the original (and vice versa): a
+ * track tagged [congorock] must find that identity somewhere on the map
+ * before a title match counts.
+ */
+export function extractRemixTags(title: string): string[] {
+  const clauses: string[] = []
+  for (const m of title.matchAll(/\(([^()]*)\)|\[([^[\]]*)\]/g)) {
+    clauses.push(m[1] ?? m[2] ?? '')
+  }
+  const dashIdx = title.indexOf(' - ')
+  if (dashIdx >= 0) clauses.push(title.slice(dashIdx + 3))
+
+  const tags: string[] = []
+  const seen = new Set<string>()
+  for (const clause of clauses) {
+    if (!REMIX_KEYWORD.test(clause)) continue
+    // Last normalizeVariants entry is the word-preserving "spaced" form
+    const variants = normalizeVariants(clause)
+    if (variants.length === 0) continue
+    const spaced = variants[variants.length - 1]
+    for (const word of spaced.split(' ')) {
+      if (word.length < 3) continue
+      if (REMIX_GENERIC_WORDS.has(word)) continue
+      if (/^\d+$/.test(word)) continue
+      if (!seen.has(word)) {
+        seen.add(word)
+        tags.push(word)
+      }
+    }
+  }
+  return tags
+}
+
 /** Words to strip from album/song names before normalisation. */
 const SUPERFLUOUS_WORDS = new Set([
   'edition',

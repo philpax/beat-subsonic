@@ -238,6 +238,59 @@ describe('matchAllTracks', () => {
   })
 })
 
+describe('remix compatibility', () => {
+  it('does not match a remix track against the original map', () => {
+    const tracks: TrackKey[] = [makeTrackKey(0, 'Benny Benassi', 'Cinema (Congorock remix)')]
+    const maps: MapKey[] = [makeMapKey(0, 'Benny Benassi', 'Cinema')]
+    expect(matchAllTracks(tracks, maps, 0.8)).toHaveLength(0)
+  })
+
+  it('does not match a remix track against a different remix map', () => {
+    const tracks: TrackKey[] = [makeTrackKey(0, 'Benny Benassi', 'Cinema (Congorock remix)')]
+    const maps: MapKey[] = [makeMapKey(0, 'Benny Benassi', 'Cinema (Skrillex Remix)')]
+    expect(matchAllTracks(tracks, maps, 0.8)).toHaveLength(0)
+  })
+
+  it('matches a remix track against the same remix map', () => {
+    const tracks: TrackKey[] = [makeTrackKey(0, 'Benny Benassi', 'Cinema (Skrillex radio edit)')]
+    const maps: MapKey[] = [makeMapKey(0, 'Benny Benassi', 'Cinema - Skrillex Remix')]
+    const results = matchAllTracks(tracks, maps, 0.8)
+    expect(results).toHaveLength(1)
+    expect(results[0].mapIndices).toEqual([0])
+  })
+
+  it('does not match the original track against a remix map', () => {
+    const tracks: TrackKey[] = [makeTrackKey(0, 'Benny Benassi', 'Cinema')]
+    const maps: MapKey[] = [makeMapKey(0, 'Benny Benassi', 'Cinema (Skrillex Remix)')]
+    expect(matchAllTracks(tracks, maps, 0.8)).toHaveLength(0)
+  })
+
+  it('matches generic version clauses (radio edit) against the original', () => {
+    const tracks: TrackKey[] = [makeTrackKey(0, 'Benny Benassi', 'Cinema (radio edit)')]
+    const maps: MapKey[] = [makeMapKey(0, 'Benny Benassi', 'Cinema')]
+    const results = matchAllTracks(tracks, maps, 0.8)
+    expect(results).toHaveLength(1)
+  })
+
+  it('matches a cover track when the map credits the cover artist', () => {
+    const tracks: TrackKey[] = [
+      makeTrackKey(0, 'Camellia feat. Kasane Teto', 'Play-With-Fire (Teto Cover)'),
+    ]
+    const maps: MapKey[] = [
+      {
+        index: 0,
+        ...buildMapKey({
+          levelAuthor: 'Mapper',
+          songAuthor: 'Camellia feat. Kasane Teto',
+          songName: 'Play-With-Fire',
+        }),
+      },
+    ]
+    const results = matchAllTracks(tracks, maps, 0.8)
+    expect(results).toHaveLength(1)
+  })
+})
+
 describe('computeMatchScore', () => {
   it('returns 1.0 for identical title + artist', () => {
     const track = makeTrackKey(0, 'Camellia', 'Body F10ating10')
