@@ -6,6 +6,8 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Set by CI for GitHub Pages project-site deployments (/<repo>/)
+  base: process.env.BASE_PATH || '/',
   plugins: [
     react(),
     babel({ presets: [reactCompilerPreset()] }),
