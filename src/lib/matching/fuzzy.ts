@@ -340,3 +340,71 @@ export function fuzzyBeyondContains(
   const jaro = jaroSimilarity(a, b)
   return winklerSimilarity(a, b, jaro) >= threshold
 }
+
+/**
+ * Offset of the remainder after the common leading WHOLE tokens of two
+ * spaced strings ("more than friends" / "more than life" → 10, the start
+ * of "friends"/"life"). Returns 0 when no complete leading token is shared.
+ * Both remainders start at the same offset because the prefix is identical.
+ */
+function commonLeadingTokenOffset(a: string, b: string): number {
+  const n = Math.min(a.length, b.length)
+  let i = 0
+  while (i < n && a[i] === b[i]) i++
+  if (i === 0) return 0
+  // Give back any partially shared token: cut at the last space boundary
+  const lastSpace = a.lastIndexOf(' ', i - 1)
+  return lastSpace < 0 ? 0 : lastSpace + 1
+}
+
+/**
+ * Like fuzzyBeyondContains, but Jaro-Winkler is made token-aware: when both
+ * strings are multi-token and share leading whole tokens, the shared prefix
+ * is peeled off and the REMAINDERS must clear the threshold.
+ *
+ * Rationale: Jaro-Winkler over full titles is dominated by a shared first
+ * word — "the deal"/"the pain", "game over"/"game start", and every
+ * "more than X"/"more than Y" scored ≥0.85 despite being different songs.
+ * Peeling keeps genuine typo tolerance ("harder better faster stroger" →
+ * remainder "stroger" vs "stronger" still matches) while rejecting pairs
+ * whose only similarity is the shared opening word(s).
+ *
+ * A remainder that is empty on either side means one string is a
+ * token-aligned prefix of the other — that is containment, which the
+ * caller's contains stage decides, so the fuzzy stage rejects it here.
+ */
+export function fuzzyTokenAware(
+  a: string,
+  am: StringMeta,
+  b: string,
+  bm: StringMeta,
+  threshold: number
+): boolean {
+  // Token-set (Dice) similarity on the full strings — order-insensitive,
+  // so leading-token peeling does not apply
+  if (am.tokenCount > 0 && bm.tokenCount > 0 && am.tokens && bm.tokens) {
+    const diceUpper = (2 * Math.min(am.tokenCount, bm.tokenCount)) / (am.tokenCount + bm.tokenCount)
+    if (diceUpper >= threshold) {
+      let intersection = 0
+      const [small, large] = am.tokens.size <= bm.tokens.size ? [am.tokens, bm.tokens] : [bm.tokens, am.tokens]
+      for (const w of small) {
+        if (large.has(w)) intersection++
+      }
+      if ((2 * intersection) / (am.tokenCount + bm.tokenCount) >= threshold) return true
+    }
+  }
+
+  // Jaro-Winkler stage, with leading-token peeling when both are multi-token
+  if (am.tokens && bm.tokens) {
+    const offset = commonLeadingTokenOffset(a, b)
+    if (offset > 0) {
+      const ra = a.slice(offset)
+      const rb = b.slice(offset)
+      if (ra.length === 0 || rb.length === 0) return false
+      const jaro = jaroSimilarity(ra, rb)
+      return winklerSimilarity(ra, rb, jaro) >= threshold
+    }
+  }
+
+  return fuzzyBeyondContains(a, am, b, bm, threshold)
+}

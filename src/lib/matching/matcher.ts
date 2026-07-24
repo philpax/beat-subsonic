@@ -34,7 +34,7 @@ import {
   stripAlbumParentheses,
   stripSuperfluousWords,
 } from './normalize'
-import { fuzzyMatch, fuzzyBeyondContains, stringMeta, type StringMeta } from './fuzzy'
+import { fuzzyMatch, fuzzyTokenAware, stringMeta, type StringMeta } from './fuzzy'
 
 // ---- Types ----
 
@@ -415,6 +415,34 @@ function titleMetasFor(index: MatchIndex, mapIdx: number, titleVariants: string[
   return metas
 }
 
+/**
+ * Containment that only counts when it is meaningful:
+ * - the shorter string must be significant (≥2 words or ≥6 chars) — tiny
+ *   generic titles like "You", "Time", "Home" are contained everywhere
+ * - the shorter string must appear on WORD boundaries in the longer one
+ *   ("plastic beach" ⊂ "welcome to the plastic beach" but NOT
+ *   "joy" ⊂ "overjoyed" or "night" ⊂ "midnightcity")
+ */
+function containsSignificant(a: string, b: string): boolean {
+  const short = a.length <= b.length ? a : b
+  const long = a.length <= b.length ? b : a
+  if (short.length < 6 && short.indexOf(' ') < 0) return false
+
+  let from = 0
+  while (true) {
+    const idx = long.indexOf(short, from)
+    if (idx < 0) return false
+    const end = idx + short.length
+    if (
+      (idx === 0 || long.charCodeAt(idx - 1) === 32) &&
+      (end === long.length || long.charCodeAt(end) === 32)
+    ) {
+      return true
+    }
+    from = idx + 1
+  }
+}
+
 /** Does one map artist variant match any of the track's artist variants? */
 function artistPairMatches(
   trackArtistVariants: string[],
@@ -425,8 +453,8 @@ function artistPairMatches(
 ): boolean {
   for (let i = 0; i < trackArtistVariants.length; i++) {
     const ta = trackArtistVariants[i]
-    if (ta === ma || ta.includes(ma) || ma.includes(ta)) return true
-    if (fuzzyBeyondContains(ta, trackArtistMetas[i], ma, mam, threshold)) return true
+    if (ta === ma || containsSignificant(ta, ma)) return true
+    if (fuzzyTokenAware(ta, trackArtistMetas[i], ma, mam, threshold)) return true
   }
   return false
 }
@@ -557,8 +585,32 @@ function artistMatches(
 }
 
 /**
+ * Is variants[k] the space-stripped duplicate of the (spaced) variant that
+ * follows it? normalizeVariants emits [stripped, spaced] adjacently, so a
+ * stripped form always directly precedes its spaced sibling.
+ */
+function isStrippedSibling(variants: string[], k: number): boolean {
+  const v = variants[k]
+  if (v.indexOf(' ') >= 0) return false
+  const next = variants[k + 1]
+  if (!next) return false
+  let i = 0
+  for (let j = 0; j < next.length; j++) {
+    const c = next.charCodeAt(j)
+    if (c === 32) continue
+    if (i >= v.length || v.charCodeAt(i) !== c) return false
+    i++
+  }
+  return i === v.length
+}
+
+/**
  * Check if any title variant of the track matches any title variant of the map.
- * Match = contains (either direction) OR fuzzy ≥ threshold.
+ * Match = equality, significant word-aligned containment, or fuzzy ≥ threshold.
+ *
+ * Equality and containment run over all variant pairs; the fuzzy stage skips
+ * space-stripped duplicates so the token-aware Jaro-Winkler peeling cannot
+ * be bypassed via the stripped forms ("thedeal"/"thepain" never reach it).
  */
 function titleMatches(
   trackTitleVariants: string[],
@@ -572,8 +624,25 @@ function titleMatches(
     for (let j = 0; j < mapTitleVariants.length; j++) {
       const mt = mapTitleVariants[j]
       if (tt === mt) return true
-      if (tt.includes(mt) || mt.includes(tt)) return true
-      if (fuzzyBeyondContains(tt, trackTitleMetas[i], mt, mapTitleMetas[j], threshold)) return true
+      if (containsSignificant(tt, mt)) return true
+    }
+  }
+
+  for (let i = 0; i < trackTitleVariants.length; i++) {
+    if (isStrippedSibling(trackTitleVariants, i)) continue
+    for (let j = 0; j < mapTitleVariants.length; j++) {
+      if (isStrippedSibling(mapTitleVariants, j)) continue
+      if (
+        fuzzyTokenAware(
+          trackTitleVariants[i],
+          trackTitleMetas[i],
+          mapTitleVariants[j],
+          mapTitleMetas[j],
+          threshold
+        )
+      ) {
+        return true
+      }
     }
   }
   return false
