@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { getDbClient } from '@/lib/db/client'
 import { getMatchClient, type MatchProgress } from '@/lib/matching/client'
 import {
@@ -54,6 +54,25 @@ export function useMatchData() {
   const tracksRef = useRef<SubsonicTrackRow[]>([])
   const mapKeysRef = useRef<MapKey[]>([])
   const trackKeysRef = useRef<TrackKey[]>([])
+
+  // Load counts on mount so the idle state can show accurate numbers
+  useEffect(() => {
+    (async () => {
+      try {
+        const dbClient = getDbClient()
+        await dbClient.init()
+        const stats = await dbClient.getStats()
+        const subsonicStats = await dbClient.subsonicGetStats()
+        setState((s) => ({
+          ...s,
+          totalMaps: stats.songCount,
+          totalTracks: subsonicStats.trackCount,
+        }))
+      } catch {
+        // DB might not be ready yet
+      }
+    })()
+  }, [])
 
   const runMatch = useCallback(async (thresh: number = threshold) => {
     if (loadingRef.current) return

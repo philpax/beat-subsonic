@@ -1,9 +1,9 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { Button } from '@/components/ui/button'
 import { OneClickButton } from '@/components/OneClickButton'
 import { useMatchData } from '@/hooks/useMatchData'
-import { ChevronDown, ChevronRight, Loader2, AlertCircle, Search } from 'lucide-react'
+import { ChevronDown, ChevronRight, Loader2, AlertCircle, Search, Zap } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
@@ -13,15 +13,6 @@ export function MatchView() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [minScore, setMinScore] = useState(0)
-
-  // Auto-run matching on mount
-  const hasRun = useRef(false)
-  useEffect(() => {
-    if (!hasRun.current) {
-      hasRun.current = true
-      runMatch()
-    }
-  }, [runMatch])
 
   // Debounce search
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -160,6 +151,23 @@ export function MatchView() {
             <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
             Matching {state.totalTracks.toLocaleString()} tracks against{' '}
             {state.totalMaps.toLocaleString()} maps…
+          </div>
+        ) : state.status === 'idle' ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            <Zap className="mx-auto mb-3 h-8 w-8 opacity-40" />
+            <p className="mb-3">
+              {state.totalTracks === 0 || state.totalMaps === 0
+                ? 'Load BeatSaver maps and fetch Subsonic tracks before matching.'
+                : `Match ${state.totalTracks.toLocaleString()} Subsonic tracks against ${state.totalMaps.toLocaleString()} BeatSaver maps.`}
+            </p>
+            <Button
+              onClick={() => runMatch()}
+              disabled={state.totalTracks === 0 || state.totalMaps === 0}
+              className="gap-2"
+            >
+              <Zap className="h-4 w-4" />
+              Run Match
+            </Button>
           </div>
         ) : filteredResults.length === 0 ? (
           <div className="py-12 text-center text-sm text-muted-foreground">
