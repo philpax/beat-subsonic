@@ -107,34 +107,47 @@ export function buildMetaEntries(data: ParsedDatabase): [string, string][] {
 
 // ---- Imperative Shell ----
 
+/** Which persistence backend the database ended up on. */
+export type DbBackend = 'opfs-sahpool' | 'opfs' | 'memory'
+
+/**
+ * Open the most persistent SQLite backend available, in order:
+ *
+ * 1. OPFS SyncAccessHandle Pool VFS — persistent, works in any dedicated
+ *    worker WITHOUT cross-origin isolation (no SharedArrayBuffer), so it
+ *    survives reloads even on plain static hosting.
+ * 2. Classic OPFS VFS — persistent, but requires COOP/COEP headers
+ *    (crossOriginIsolated) for its SharedArrayBuffer-based proxy.
+ * 3. In-memory — last resort; data is refetched every page load.
+ */
+export async function openBestDb(sqlite3: any): Promise<{ db: SqliteDb; backend: DbBackend }> {
+  try {
+    const poolUtil = await sqlite3.installOpfsSAHPoolVfs({})
+    return { db: new poolUtil.OpfsSAHPoolDb(DB_FILENAME) as SqliteDb, backend: 'opfs-sahpool' }
+  } catch {
+    // OPFS unavailable (no createSyncAccessHandle, or another tab holds
+    // the pool's access handles) — fall through
+  }
+
+  try {
+    if (sqlite3.oo1?.OpfsDb) {
+      return { db: new sqlite3.oo1.OpfsDb(DB_FILENAME, 'cw') as SqliteDb, backend: 'opfs' }
+    }
+  } catch {
+    // fall through
+  }
+
+  return { db: new sqlite3.oo1.DB(':memory:') as SqliteDb, backend: 'memory' }
+}
+
 export class SongDatabase {
   private db: SqliteDb | null = null
 
-  /** Open the database using the given sqlite3 module instance. */
-  open(sqlite3: any, useOpfs: boolean): void {
+  /** Attach an opened database handle and ensure the schema exists. */
+  open(db: SqliteDb): void {
     if (this.db) return
-
-    if (useOpfs && sqlite3.oo1?.OpfsDb) {
-      this.db = new sqlite3.oo1.OpfsDb(DB_FILENAME, 'cw') as SqliteDb
-      console.log('[SongDatabase] Using OPFS-backed SQLite')
-    } else {
-      this.db = new sqlite3.oo1.DB(':memory:') as SqliteDb
-      console.log('[SongDatabase] Using in-memory SQLite')
-    }
-
+    this.db = db
     this.db.exec(SCHEMA_SQL)
-  }
-
-  /** Check if OPFS is available in the given sqlite3 module. */
-  static isOpfsAvailable(sqlite3: any): boolean {
-    try {
-      if (!sqlite3.oo1?.OpfsDb) return false
-      const testDb = new sqlite3.oo1.OpfsDb(':test-opfs-availability:')
-      testDb.close()
-      return true
-    } catch {
-      return false
-    }
   }
 
   private getDb(): SqliteDb {

@@ -6,7 +6,7 @@
  */
 
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm'
-import { SongDatabase } from './song-database'
+import { SongDatabase, openBestDb } from './song-database'
 import { SubsonicDatabase } from '../subsonic/db'
 import type { ParsedDatabase } from '../proto/schema'
 import type { SongQuery } from './queries'
@@ -24,11 +24,10 @@ self.onmessage = async (event: MessageEvent) => {
     switch (type) {
       case 'init': {
         const sqlite3 = await sqlite3InitModule()
-        const useOpfs = SongDatabase.isOpfsAvailable(sqlite3)
-        songDb.open(sqlite3, useOpfs)
+        const { db, backend } = await openBestDb(sqlite3)
+        console.log(`[SongDatabase] SQLite backend: ${backend}`)
+        songDb.open(db)
         // Share the same DB instance for Subsonic tables
-        // Access the internal db via a method — we need to expose it
-        // For now, re-open with the same sqlite3 instance
         subsonicDb.open(songDb.getDbHandle())
         result = songDb.getFullStats()
         break
