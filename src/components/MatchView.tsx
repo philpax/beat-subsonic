@@ -214,8 +214,8 @@ export function MatchView({ tagList }: MatchViewProps) {
             {/* Header */}
             <div className="sticky top-0 z-10 flex border-b bg-background">
               <div className="w-8 shrink-0 px-2 py-2" />
+              <div className="w-64 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Artist</div>
               <div className="flex-1 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Title</div>
-              <div className="w-40 shrink-0 px-2 py-2 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Artist</div>
               <div className="w-16 shrink-0 px-2 py-2 text-right font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Score</div>
               <div className="w-16 shrink-0 px-2 py-2 text-right font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Maps</div>
             </div>
@@ -239,6 +239,9 @@ export function MatchView({ tagList }: MatchViewProps) {
                         <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                       )}
                     </div>
+                    <div className="w-64 shrink-0 truncate px-2 text-sm text-muted-foreground">
+                      {result.track.artist}
+                    </div>
                     <div className="flex-1 truncate px-2 text-sm font-medium">
                       {result.track.title}
                       {result.instances.length > 1 && (
@@ -251,9 +254,6 @@ export function MatchView({ tagList }: MatchViewProps) {
                           ×{result.instances.length}
                         </span>
                       )}
-                    </div>
-                    <div className="w-40 shrink-0 truncate px-2 text-xs text-muted-foreground">
-                      {result.track.artist}
                     </div>
                     <div className="w-16 shrink-0 px-2 text-right">
                       <span
