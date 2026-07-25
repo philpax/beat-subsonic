@@ -39,7 +39,8 @@ function compareMatches(a: MatchedMap, b: MatchedMap, key: MatchSortKey): number
     case 'duration':
       return a.song.duration - b.song.duration
     case 'rating':
-      return a.song.rating - b.song.rating
+      // Ratings tie frequently (unrated maps are all 0), so fall back to score
+      return a.song.rating - b.song.rating || a.score - b.score
     case 'ranked':
       return a.song.ranked_states - b.song.ranked_states
     case 'upload_time':
@@ -62,7 +63,7 @@ interface MatchViewProps {
 export function MatchView({ tagList }: MatchViewProps) {
   const { state, threshold, runMatch, updateThreshold } = useMatchData()
   const [selectedSong, setSelectedSong] = useState<SongRow | null>(null)
-  const [matchSort, setMatchSort] = useState<MatchSortKey>('score')
+  const [matchSort, setMatchSort] = useState<MatchSortKey>('rating')
   const [matchSortDir, setMatchSortDir] = useState<'asc' | 'desc'>('desc')
 
   const handleMatchSortClick = useCallback((key: MatchSortKey) => {
