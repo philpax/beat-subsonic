@@ -81,7 +81,7 @@ export function MatchView({ tagList }: MatchViewProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [minScore, setMinScore] = useState(0)
+  const [minRating, setMinRating] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = usePersistentState<number>('table-pageSize', PAGE_SIZE_DEFAULT)
 
@@ -96,18 +96,20 @@ export function MatchView({ tagList }: MatchViewProps) {
     }, 300)
   }, [])
 
-  const filteredResults = state.results.filter((r) => {
-    if (debouncedSearch) {
+  // Min rating prunes the candidate maps themselves, then drops any track left
+  // with nothing — so the expanded table and the outer row agree on what counts
+  const filteredResults = state.results
+    .filter((r) => {
+      if (!debouncedSearch) return true
       const q = debouncedSearch.toLowerCase()
-      if (!r.track.title.toLowerCase().includes(q) && !r.track.artist.toLowerCase().includes(q))
-        return false
-    }
-    if (minScore > 0) {
-      const bestScore = r.matches[0]?.score ?? 0
-      if (bestScore < minScore / 100) return false
-    }
-    return true
-  })
+      return r.track.title.toLowerCase().includes(q) || r.track.artist.toLowerCase().includes(q)
+    })
+    .map((r) =>
+      minRating > 0
+        ? { ...r, matches: r.matches.filter((m) => m.song.rating >= minRating / 100) }
+        : r,
+    )
+    .filter((r) => r.matches.length > 0)
 
   // Pagination — slice the filtered results
   const total = filteredResults.length
@@ -142,17 +144,20 @@ export function MatchView({ tagList }: MatchViewProps) {
         </div>
         <div className="flex items-center gap-2">
           <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Min Score
+            Min Rating
           </label>
           <input
             type="range"
             min="0"
             max="100"
-            value={minScore}
-            onChange={(e) => setMinScore(Number(e.target.value))}
+            value={minRating}
+            onChange={(e) => {
+              setMinRating(Number(e.target.value))
+              setPage(1)
+            }}
             className="w-24"
           />
-          <span className="font-mono text-xs text-muted-foreground w-8">{minScore}%</span>
+          <span className="font-mono text-xs text-muted-foreground w-8">{minRating}%</span>
         </div>
         <div className="flex items-center gap-2">
           <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
